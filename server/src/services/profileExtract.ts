@@ -48,7 +48,7 @@ const HINDI_AGE_WORDS: [RegExp, number][] = [
   [/\b(bais|baees)\b|बाईस/u, 22],
   [/\b(teis|teees)\b|तेईस/u, 23],
   [/\b(chaubis|chaubees)\b|चौबीस/u, 24],
-  [/\b(pachis|pachees)\b|पच्चीस/u, 25],
+  [/\b(pachis|pachees|paccis|pacchis|pachchis)\b|पच्चीस/u, 25],
   [/\b(chabbis|chhabbis)\b|छब्बीस/u, 26],
   [/\b(sattais|sattaees)\b|सत्ताईस/u, 27],
   [/\b(athais|atthais|atthaees)\b|अट्ठाईस/u, 28],

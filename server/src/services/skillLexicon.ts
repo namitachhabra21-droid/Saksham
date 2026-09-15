@@ -43,7 +43,7 @@ export const SKILL_LEXICON: LexiconEntry[] = [
     patterns: [
       "silai", "silaai", "kapda silna", "darzi", "tailor", "stitching",
       "sewing", "सिलाई", "दर्जी", "blouse", "kurta silna",
-      "stiching", "stitch", "kapde silna", "kapde banana", "dress making",
+      "stiching", "stitch", "kapde silna", "kapde silti", "kapde silta", "kapde banana", "dress making",
       "alteration", "embroidery machine", "सिलाई मशीन", "कपड़े सिलना",
       "সেলাই", "দর্জি", "தையல்", "தையல்காரர்", "కుట్టు", "దర్జీ",
       "शिलाई", "शिंपी", "ಹೊಲಿಗೆ", "ಟೈಲರ್", "સિલાઈ", "દરજી",
@@ -67,7 +67,7 @@ export const SKILL_LEXICON: LexiconEntry[] = [
   {
     normalized: "handloom-weaving",
     patterns: [
-      "bunkar", "kapda bunna", "handloom", "weaving", "julaha", "loom",
+      "bunkar", "kapda bunna", "handloom", "weaving", "julaha", "loom", "bunai", "bunaai",
       "बुनकर", "बुनाई", "saree bunna", "chadar bunna",
       "weaver", "cloth weaving", "তাঁত", "তাঁতি", "நெசவு", "கைத்தறி",
       "నేయడం", "చేనేత", "विणकाम", "हातमाग", "ನೇಯ್ಗೆ", "ಕೈಮಗ್ಗ",
@@ -400,7 +400,7 @@ export const SKILL_LEXICON: LexiconEntry[] = [
   {
     normalized: "hair-styling",
     patterns: [
-      "baal katta", "baal kat", "hair cut", "haircut", "hairdress", "naai", "hajaam", "salon mein baal","hair cutting", "hair style", "hair dresser", "naai", "barber", "बाल काटना", "हेयर स्टाइलिस्ट", "नाई"],
+      "baal katta", "baal kat", "bal katta", "bal kat", "bal kaatna", "hair cut", "haircut", "hairdress", "naai", "hajaam", "salon mein baal","hair cutting", "hair style", "hair dresser", "naai", "barber", "बाल काटना", "हेयर स्टाइलिस्ट", "नाई"],
   },
   {
     normalized: "makeup-artist",
