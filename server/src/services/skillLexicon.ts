@@ -116,7 +116,7 @@ export const SKILL_LEXICON: LexiconEntry[] = [
     normalized: "agriculture",
     patterns: [
       "kheti", "kisan", "farming", "fasal", "khet", "agriculture", "farmer",
-      "खेती", "किसान", "फसल", "crop",
+      "खेती", "किसान", "फसल", "crop", "खेत", "खेत में काम", "खेत का काम",
       "खेती बाड़ी", "জমি চাষ", "কৃষক", "விவசாயம்", "விவசாயி",
       "వ్యవసాయం", "రైతు", "शेती", "शेतकरी", "ಕೃಷಿ", "ರೈತ",
       "ખેતી", "ખેડૂત", "ਖੇਤੀ", "ਕਿਸਾਨ", "ଚାଷ", "ଚାଷୀ",
@@ -400,7 +400,7 @@ export const SKILL_LEXICON: LexiconEntry[] = [
   {
     normalized: "hair-styling",
     patterns: [
-      "baal katta", "baal kat", "bal katta", "bal kat", "bal kaatna", "hair cut", "haircut", "hairdress", "naai", "hajaam", "salon mein baal","hair cutting", "hair style", "hair dresser", "naai", "barber", "बाल काटना", "हेयर स्टाइलिस्ट", "नाई"],
+      "baal katta", "baal kat", "bal katta", "bal kat", "bal kaatna", "hair cut", "haircut", "hairdress", "naai", "hajaam", "salon mein baal","hair cutting", "hair style", "hair dresser", "naai", "barber", "बाल काटना", "बाल काटता", "बाल काटती", "बाल कटिंग", "हेयर स्टाइलिस्ट", "नाई"],
   },
   {
     normalized: "makeup-artist",
@@ -430,7 +430,7 @@ export const SKILL_LEXICON: LexiconEntry[] = [
   {
     normalized: "domestic-cooking",
     patterns: [
-      "घरेलू रसोई", "ghar ka khana bana", "ghar mein khana bana", "house cook", "domestic cook","ghar ka khana", "khana banana", "cooking", "रसोइया", "khana banane ka kaam", "घर का खाना"],
+      "घरेलू रसोई", "ghar ka khana bana", "ghar mein khana bana", "house cook", "domestic cook","ghar ka khana", "khana banana", "cooking", "रसोइया", "khana banane ka kaam", "घर का खाना", "खाना बनाना", "खाना बनाती", "खाना बनाता", "खाना पकाना"],
   },
   {
     normalized: "cooking-chef",

@@ -51,6 +51,27 @@ for t in phrases:
         print(f"\033[31mFAIL\033[0m  {t}  -> {e}")
 PY
 
+echo; echo "-- 5b. Hindi demo (Devanagari) --"
+python3 - <<'PYHI'
+import json,urllib.request
+def post(path,pl):
+    r=urllib.request.Request('http://localhost:4000'+path,data=json.dumps(pl).encode('utf-8'),
+        headers={'Content-Type':'application/json'})
+    return json.load(urllib.request.urlopen(r,timeout=40))
+for t in ["\u092e\u0948\u0902 \u0938\u093f\u0932\u093e\u0908 \u0915\u0930\u0924\u0940 \u0939\u0942\u0902",
+          "\u092e\u0948\u0902 \u092e\u093f\u091f\u094d\u091f\u0940 \u0915\u0947 \u092c\u0930\u094d\u0924\u0928 \u092c\u0928\u093e\u0924\u093e \u0939\u0942\u0902",
+          "\u092e\u0948\u0902 \u0916\u0947\u0924 \u092e\u0947\u0902 \u0915\u093e\u092e \u0915\u0930\u0924\u0940 \u0939\u0942\u0902"]:
+    try:
+        d=post('/api/nsqf/map',{'text':t})[0]; c=d.get('confidence',0)
+        print(("\033[32mPASS\033[0m  " if c>0 else "\033[31mFAIL\033[0m  ")+t+"  ->  "+str(d.get('normalizedSkill'))+" ("+str(c)+")")
+    except Exception as e: print("\033[31mFAIL\033[0m  "+t+" -> "+str(e))
+try:
+    d=post('/api/assistant/ask',{'question':'PM-AJAY \u0915\u094d\u092f\u093e \u0939\u0948?','language':'hi'})
+    n=len(d.get('sources',[]))
+    print(("\033[32mPASS\033[0m  " if n else "\033[31mFAIL\033[0m  ")+"Hindi RAG: PM-AJAY kya hai  (sources="+str(n)+")")
+except Exception as e: print("\033[31mFAIL\033[0m  Hindi RAG -> "+str(e))
+PYHI
+
 echo; echo "-- 6. Voice (TTS, all 10 languages) --"
 BAD=""
 for L in hi en bn ta te mr kn gu pa or; do
