@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { transcribeAudio, synthesizeSpeech, TranscriptionUnavailableError } from "../services/speech.js";
 import { mapTranscriptToNsqf } from "../services/nsqf.js";
 import { recommendCourses } from "../services/recommend.js";
+import { careerProfileSchema, careerDetailText, buildCareerPlan } from "../services/career.js";
 import { matchJobs } from "../services/jobs.js";
 import { buildSpokenReply } from "../services/reply.js";
 import { answerFromDocuments } from "../services/rag.js";
@@ -179,8 +180,8 @@ assistantRouter.post("/converse", upload.single("audio"), async (req, res) => {
  * session's stored transcript and creates no new VoiceSession, so the admin
  * funnel still shows one session per spoken utterance.
  *
- * Ranking-only — the same courses come back, reordered. Nothing is filtered
- * out, so picking the "wrong" option can never hide an opportunity.
+ * Structured profiles exclude incompatible specialties. Jobs and learning
+ * return separate result sets and a goal-specific personalized roadmap.
  */
 assistantRouter.post("/reprioritise", async (req, res) => {
   const schema = z.object({
@@ -188,11 +189,12 @@ assistantRouter.post("/reprioritise", async (req, res) => {
     intent: z.enum(["jobs", "training", "certificate", "guidance"]),
     state: z.string().optional(),
     district: z.string().optional(),
-    skillDetails: z.string().max(500).optional(),
+    skillDetails: z.string().max(2000).optional(),
+    profile: careerProfileSchema.optional(),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  const { sessionId, intent, state, district, skillDetails } = parsed.data;
+  const { sessionId, intent, state, district, skillDetails, profile } = parsed.data;
 
   const session = await prisma.voiceSession.findUnique({ where: { id: sessionId } });
   if (!session) return res.status(404).json({ error: "Session not found" });
@@ -212,8 +214,8 @@ assistantRouter.post("/reprioritise", async (req, res) => {
   // a session recorded with no usable transcript has nothing to re-rank
   if (!session.rawTranscript) return res.json({ sessionId, intent, mappings: [], recommendations: [], jobs: [] });
 
-  const detailText = skillDetails?.trim();
-  const mappingText = detailText ? `${session.rawTranscript}. ${detailText}` : session.rawTranscript;
+  const detailText = profile ? careerDetailText(profile) : skillDetails?.trim();
+  const mappingText = profile ? detailText! : detailText ? `${session.rawTranscript}. ${detailText}` : session.rawTranscript;
   const mappings = await mapTranscriptToNsqf(mappingText);
   const [recommendations, jobs] = await Promise.all([
     recommendCourses({
@@ -223,11 +225,12 @@ assistantRouter.post("/reprioritise", async (req, res) => {
       language: session.language,
       intent,
       skillDetails: detailText,
+      profile,
     }),
-    matchJobs({ mappings, state: effectiveState, district: effectiveDistrict, skillDetails: detailText }),
+    matchJobs({ mappings, state: effectiveState, district: effectiveDistrict, skillDetails: detailText, profile }),
   ]);
 
-  res.json({ sessionId, intent, mappings, recommendations, jobs });
+  res.json({ sessionId, intent, mappings, recommendations: intent === "jobs" ? [] : recommendations, jobs: intent === "jobs" ? jobs : [], plan: profile ? buildCareerPlan(profile, intent, session.language) : undefined });
 });
 
 /**
@@ -258,6 +261,7 @@ assistantRouter.post("/transcribe", upload.single("audio"), async (req, res) => 
 
   res.json({
     transcript: stt.transcript,
+    needsReview: stt.needsReview,
     language: stt.language,
     languageCode: stt.language,
     languageProbability: stt.confidence,

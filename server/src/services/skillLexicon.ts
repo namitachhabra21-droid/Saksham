@@ -683,7 +683,7 @@ export const SKILL_LEXICON: LexiconEntry[] = [
       "teacher", "teaching", "teach", "tutor", "tuition", "school teacher",
       "play school", "children ko padhana", "bachchon ko padhana",
       "adhyapak", "shikshak", "padhata hoon", "padhati hoon", "padhana",
-      "टीचर", "शिक्षक", "अध्यापक", "पढ़ाना", "पढ़ाती", "पढ़ाता", "पढ़ाते",
+      "टीचर", "टीचिंग", "तीचिंग", "ट्यूशन", "शिक्षक", "अध्यापक", "पढ़ाना", "पढ़ाती", "पढ़ाता", "पढ़ाते",
       "बच्चों को पढ़ाना", "बच्चों को पढ़ाती", "बच्चों को पढ़ाता", "बच्चों को पढ़ाते",
       "पढ़ाना", "पढ़ाती", "पढ़ाता", "पढ़ाते", "बच्चों को पढ़ाती", "बच्चों को पढ़ाता",
     ],
@@ -723,6 +723,10 @@ export function extractSkills(transcript: string): string[] {
 function normalizeText(value: string): string {
   return value
     .toLowerCase()
+    .normalize("NFD")
+    // Spoken Hindi is often transcribed without nukta marks (पढाती / पढ़ाती).
+    // Compare both spellings equally without rewriting what the person said.
+    .replace(/\u093c/gu, "")
     .normalize("NFC")
     .replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")

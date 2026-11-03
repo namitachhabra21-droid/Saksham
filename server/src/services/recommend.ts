@@ -1,3 +1,5 @@
+import type { CareerProfile } from "./career.js";
+import { profileRelevance } from "./careerRanking.js";
 import { prisma } from "../lib/prisma.js";
 import type { Language } from "@prisma/client";
 import { rationalePhrase } from "./i18n.js";
@@ -27,10 +29,10 @@ interface RecommendInput {
   state?: string | null;
   district?: string | null;
   language?: Language;
-  /** What the beneficiary asked for. Re-weights the ranking; never filters, so
-   *  the full livelihood map stays visible whichever option they picked. */
+  /** Goal-specific ranking; a structured profile also excludes incompatible specialties. */
   intent?: Intent;
   skillDetails?: string | null;
+  profile?: CareerProfile;
 }
 
 /** The two real datasets spell sectors differently — NSQF says
@@ -102,7 +104,7 @@ function isAcademicTutoringCourse(courseText: string): boolean {
  *   0.05  the skill mapped to an NSQF qualification at all (auditable match)
  */
 export async function recommendCourses(input: RecommendInput): Promise<CourseRecommendation[]> {
-  const { mappings, state, language = "hi", intent = "guidance", skillDetails } = input;
+  const { mappings, state, language = "hi", intent = "guidance", skillDetails, profile } = input;
 
   const matched = mappings.filter((m) => m.normalizedSkill !== "unknown");
   const tokens = [...new Set(matched.map((m) => m.normalizedSkill.toLowerCase()))];
@@ -166,6 +168,8 @@ export async function recommendCourses(input: RecommendInput): Promise<CourseRec
       score += Math.min(0.15, overlap * 0.05);
     }
 
+    if (profile) score += profileRelevance(`${course.subCourseName} ${course.courseName} ${course.subSector}`, profile, "course");
+
     const scopedState = courseStateName(course.courseLevel);
     const normalizedScopedState = normalizeLocation(scopedState);
     const locationRank =
@@ -195,7 +199,7 @@ export async function recommendCourses(input: RecommendInput): Promise<CourseRec
       // signal the catalogue holds (PmajayCourse has no vacancy/placement data).
       const occupations = (source?.proposedOccupations ?? []).map((o) => o.toLowerCase());
       if (occupations.some((o) => o && courseTitle.includes(o))) score += 0.1;
-      score += detailPenalty;
+
     } else if (intent === "certificate") {
       // Certifying an existing skill: prefer the course that names the trade
       // they already practise, over adjacent ones in the same sector.
@@ -214,7 +218,7 @@ export async function recommendCourses(input: RecommendInput): Promise<CourseRec
       nsqfTitle: source?.title ?? null,
       nsqfLevel: source?.nsqfLevel ?? null,
       score: Number(Math.max(0, Math.min(1, score)).toFixed(3)),
-      detailPenalty,
+      detailPenalty: profile ? profileRelevance(`${course.subCourseName} ${course.courseName} ${course.subSector}`, profile, "course") : detailPenalty,
       locationRank,
       rationale: rationalePhrase(language, reasons, { sector: course.sector }),
     };

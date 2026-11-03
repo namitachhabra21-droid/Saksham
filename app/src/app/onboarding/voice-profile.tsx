@@ -3,20 +3,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import {
-  RecordingPresets,
-  requestRecordingPermissionsAsync,
-  setAudioModeAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-} from 'expo-audio';
+
 
 import { extractProfileAnswer, type ProfileField } from '@/lib/api';
 import { UI_STRINGS } from '@/constants/languages';
 import { useAuth } from '@/lib/auth';
 import { revealPortion, speak, stopSpeaking } from '@/lib/speech';
-import { transcribeWithSarvam } from '@/lib/transcription';
-import { useAutoStopRecording } from '@/lib/useAutoStopRecording';
+import { useVoiceInput } from '@/lib/useVoiceInput';
+
 import { resolveDeviceLocation } from '@/lib/location';
 import { setSkillDetails } from '@/lib/session';
 import { useStore } from '@/lib/store';
@@ -31,12 +25,6 @@ export default function VoiceProfileStep() {
   const { language, guestProfile, setGuestProfile, setLocation } = useStore();
   const { updateProfile, token, user } = useAuth();
   const { c, radius, elevation } = useTheme();
-  const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
-  const recState = useAudioRecorderState(recorder, 100);
-  const micLevel = recState.isRecording
-    ? Math.min(1, Math.max(0, ((recState.metering ?? -50) + 50) / 50))
-    : 0;
-
   const t = language ? UI_STRINGS[language] : UI_STRINGS.hi;
   const effectiveLanguage = language ?? 'hi';
 
@@ -82,7 +70,18 @@ export default function VoiceProfileStep() {
   const [typed, setTyped] = useState('');
   const [showType, setShowType] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
+  const [heardSpeech, setHeardSpeech] = useState(false);
+  const voice = useVoiceInput(effectiveLanguage, transcript => {
+    setTyped(transcript);
+    setShowType(true);
+    setHeardSpeech(true);
+  }, busy);
+  const transcribing = voice.transcribing || voice.starting;
+  const micLevel = voice.level;
+  const recState = { isRecording: voice.recording, durationMillis: voice.duration };
+  const toggleRecord = voice.toggle;
+
+
   // types the latest agent bubble out word-by-word, paced to the spoken audio
   const [reveal, setReveal] = useState<{ id: number; fraction: number } | null>(null);
   const askedStepRef = useRef(-1);
@@ -218,44 +217,6 @@ export default function VoiceProfileStep() {
     }
   }
 
-  async function toggleRecord() {
-    if (busy || transcribing) return;
-    if (recState.isRecording) {
-      await recorder.stop();
-      const audioUri = recorder.uri;
-      if (!audioUri) {
-        Alert.alert(t.noSpeechDetected);
-        return;
-      }
-      setTranscribing(true);
-      try {
-        const result = await transcribeWithSarvam(audioUri, effectiveLanguage);
-        await submitAnswer(result.transcript);
-      } catch (e) {
-        Alert.alert(t.transcriptionError, e instanceof Error ? e.message : String(e));
-      } finally {
-        setTranscribing(false);
-      }
-      return;
-    }
-    const { granted } = await requestRecordingPermissionsAsync();
-    if (!granted) {
-      Alert.alert('Microphone permission needed', undefined);
-      return;
-    }
-    stopSpeaking();
-    setReveal(null);
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record();
-  }
-
-  useAutoStopRecording({
-    isRecording: recState.isRecording,
-    level: micLevel,
-    durationMillis: recState.durationMillis ?? 0,
-    onStop: toggleRecord,
-  });
 
   const micState: MicState = busy || transcribing ? 'thinking' : recState.isRecording ? 'listening' : 'idle';
   const status = busy
@@ -326,6 +287,8 @@ export default function VoiceProfileStep() {
           </View>
 
           <View style={styles.micWrap}>
+            {!!voice.error && <Txt accessibilityRole="alert" tone="danger">{voice.error}</Txt>}
+            {recState.isRecording && <Button label="Stop recording" onPress={toggleRecord} />}
             <MicOrb state={micState} onPress={toggleRecord} level={micLevel} size={120} />
             <Txt variant="title" center style={{ marginTop: 8 }}>
               {status}
@@ -334,6 +297,8 @@ export default function VoiceProfileStep() {
 
           {showType && (
             <Animated.View entering={FadeInDown.duration(250)} style={styles.typeBox}>
+              {heardSpeech && <Txt tone="primary">I heard this. Review or edit your answer, then send.</Txt>}
+              {heardSpeech && voice.needsReview && <Txt tone="danger">Low-confidence transcription. Please correct any mistakes before sending.</Txt>}
               <TextInput
                 value={typed}
                 onChangeText={setTyped}
@@ -350,13 +315,17 @@ export default function VoiceProfileStep() {
                 icon="send"
                 onPress={() => submitAnswer(typed)}
                 loading={busy}
-                disabled={!typed.trim()}
+                disabled={!typed.trim() || transcribing || recState.isRecording}
               />
             </Animated.View>
           )}
         </ScrollView>
 
         <View style={styles.bottom}>
+          {Platform.OS === 'web' && !recState.isRecording && !transcribing && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Button size="md" fullWidth={false} variant={voice.voiceLanguage === 'en' ? 'primary' : 'secondary'} label="Voice: English" onPress={() => voice.setVoiceLanguage('en')} />
+            <Button size="md" fullWidth={false} variant={voice.voiceLanguage === 'hi' ? 'primary' : 'secondary'} label="Voice: Hindi / Hinglish" onPress={() => voice.setVoiceLanguage('hi')} />
+          </View>}
           <Button
             label={showType ? t.tapToSpeak : t.typeInstead}
             variant="secondary"

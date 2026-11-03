@@ -1,4 +1,4 @@
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -14,6 +14,7 @@ type Tab = 'login' | 'signup';
 
 export default function AuthScreen() {
   const { language } = useStore();
+  const params = useLocalSearchParams<{ returnTo?: string }>();
   const { token, user, login, register } = useAuth();
   const { c, radius, elevation } = useTheme();
   const t = language ? UI_STRINGS[language] : UI_STRINGS.hi;
@@ -46,7 +47,7 @@ export default function AuthScreen() {
   }
 
   if (!language) return <Redirect href="/language" />;
-  if (token) return <Redirect href={hasBasicProfile() ? '/main' : '/onboarding/voice-profile?mode=basic'} />;
+  if (token) return <Redirect href={params.returnTo === '/results' ? '/results' : params.returnTo === '/applications' ? '/applications' : hasBasicProfile() ? '/main' : '/onboarding/voice-profile?mode=basic'} />;
 
   async function submit() {
     setError(null);

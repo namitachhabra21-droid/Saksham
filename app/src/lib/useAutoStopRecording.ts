@@ -1,13 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-/** normalized metering (0–1) above which we treat the input as speech */
-const SPEECH_LEVEL = 0.22;
-/** stop this long after the beneficiary stops talking */
-const SILENCE_MS = 1500;
-/** ignore the very start, before they've had a chance to begin */
-const MIN_MS = 800;
-/** hard cap, so a hot mic in a noisy room can't record forever */
-const MAX_MS = 30000;
+import { shouldStopRecording, SPEECH_LEVEL } from './recordingPolicy';
 
 interface Options {
   isRecording: boolean;
@@ -40,22 +33,15 @@ export function useAutoStopRecording({ isRecording, level, durationMillis, onSto
     }
     if (stoppedRef.current) return;
 
+    const now = Date.now();
+    if (shouldStopRecording({ heardSpeech: heardSpeechRef.current, lastVoiceAt: lastVoiceAtRef.current, level, durationMillis, now })) {
+      stoppedRef.current = true;
+      onStopRef.current();
+      return;
+    }
     if (level >= SPEECH_LEVEL) {
       heardSpeechRef.current = true;
-      lastVoiceAtRef.current = Date.now();
-      return;
-    }
-
-    if (durationMillis >= MAX_MS) {
-      stoppedRef.current = true;
-      onStopRef.current();
-      return;
-    }
-
-    if (!heardSpeechRef.current || durationMillis < MIN_MS) return;
-    if (Date.now() - lastVoiceAtRef.current >= SILENCE_MS) {
-      stoppedRef.current = true;
-      onStopRef.current();
+      lastVoiceAtRef.current = now;
     }
   }, [isRecording, level, durationMillis]);
 }

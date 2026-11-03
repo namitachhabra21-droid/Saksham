@@ -143,7 +143,7 @@ export default async function Home() {
           </nav>
           <div className="flex items-center gap-2">
             <a
-              href="https://saksham-app-preview.vercel.app"
+              href={process.env.NEXT_PUBLIC_APP_URL ?? "https://saksham-app-preview.vercel.app"}
               target="_blank"
               rel="noreferrer"
               className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-surface-alt"

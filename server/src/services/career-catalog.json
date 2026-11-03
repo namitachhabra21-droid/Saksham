@@ -1,0 +1,626 @@
+{
+  "professions": [
+    {
+      "id": "teaching",
+      "label": {
+        "en": "Teaching / education",
+        "hi": "शिक्षण / शिक्षा"
+      },
+      "pattern": "teach|tutor|tuition|academic|पढ़ा|पढा|शिक्ष|अध्यापक",
+      "specializations": [
+        {
+          "id": "preschool",
+          "label": {
+            "en": "Preschool / nursery",
+            "hi": "प्रीस्कूल / नर्सरी"
+          }
+        },
+        {
+          "id": "primary",
+          "label": {
+            "en": "Primary (classes 1–5)",
+            "hi": "प्राथमिक (कक्षा 1–5)"
+          }
+        },
+        {
+          "id": "secondary",
+          "label": {
+            "en": "Secondary (classes 6–10)",
+            "hi": "माध्यमिक (कक्षा 6–10)"
+          }
+        },
+        {
+          "id": "senior",
+          "label": {
+            "en": "Senior secondary (classes 11–12)",
+            "hi": "उच्च माध्यमिक (कक्षा 11–12)"
+          }
+        },
+        {
+          "id": "exam",
+          "label": {
+            "en": "Competitive exam coaching",
+            "hi": "प्रतियोगी परीक्षा की कोचिंग"
+          }
+        }
+      ],
+      "questions": [
+        {
+          "id": "subject",
+          "label": {
+            "en": "Which subject do you teach?",
+            "hi": "आप कौन सा विषय पढ़ाते हैं?"
+          },
+          "options": [
+            {
+              "id": "maths",
+              "label": {
+                "en": "Mathematics",
+                "hi": "गणित"
+              }
+            },
+            {
+              "id": "science",
+              "label": {
+                "en": "Science",
+                "hi": "विज्ञान"
+              }
+            },
+            {
+              "id": "english",
+              "label": {
+                "en": "English",
+                "hi": "अंग्रेज़ी"
+              }
+            },
+            {
+              "id": "hindi",
+              "label": {
+                "en": "Hindi",
+                "hi": "हिंदी"
+              }
+            },
+            {
+              "id": "all",
+              "label": {
+                "en": "All primary subjects",
+                "hi": "प्राथमिक के सभी विषय"
+              }
+            },
+            {
+              "id": "commerce",
+              "label": {
+                "en": "Commerce",
+                "hi": "वाणिज्य"
+              }
+            }
+          ]
+        },
+        {
+          "id": "credential",
+          "label": {
+            "en": "Teaching qualification",
+            "hi": "शिक्षण की योग्यता"
+          },
+          "options": [
+            {
+              "id": "none",
+              "label": {
+                "en": "No teaching qualification yet",
+                "hi": "अभी शिक्षण की योग्यता नहीं"
+              }
+            },
+            {
+              "id": "graduate",
+              "label": {
+                "en": "Graduate",
+                "hi": "स्नातक"
+              }
+            },
+            {
+              "id": "deled",
+              "label": {
+                "en": "D.El.Ed / diploma",
+                "hi": "डी.एल.एड / डिप्लोमा"
+              }
+            },
+            {
+              "id": "bed",
+              "label": {
+                "en": "B.Ed",
+                "hi": "बी.एड"
+              }
+            },
+            {
+              "id": "tet",
+              "label": {
+                "en": "B.Ed + CTET / state TET",
+                "hi": "बी.एड + CTET / राज्य TET"
+              }
+            }
+          ]
+        },
+        {
+          "id": "setting",
+          "label": {
+            "en": "Where have you taught?",
+            "hi": "आपने कहाँ पढ़ाया है?"
+          },
+          "options": [
+            {
+              "id": "new",
+              "label": {
+                "en": "Not taught yet",
+                "hi": "अभी नहीं पढ़ाया"
+              }
+            },
+            {
+              "id": "home",
+              "label": {
+                "en": "Home tuition",
+                "hi": "घर पर ट्यूशन"
+              }
+            },
+            {
+              "id": "school",
+              "label": {
+                "en": "School",
+                "hi": "स्कूल"
+              }
+            },
+            {
+              "id": "coaching",
+              "label": {
+                "en": "Coaching centre",
+                "hi": "कोचिंग सेंटर"
+              }
+            },
+            {
+              "id": "online",
+              "label": {
+                "en": "Online",
+                "hi": "ऑनलाइन"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tailoring",
+      "label": {
+        "en": "Tailoring",
+        "hi": "सिलाई"
+      },
+      "pattern": "tailor|sewing|stitch|embroid|सिलाई|सिलाइ|दर्जी|कढ़ाई",
+      "specializations": [
+        {
+          "id": "alterations",
+          "label": {
+            "en": "Repairs and alterations",
+            "hi": "मरम्मत और कपड़ों की फिटिंग"
+          }
+        },
+        {
+          "id": "womenswear",
+          "label": {
+            "en": "Blouses, suits and womenswear",
+            "hi": "ब्लाउज़, सूट और महिलाओं के कपड़े"
+          }
+        },
+        {
+          "id": "industrial",
+          "label": {
+            "en": "Industrial machine sewing",
+            "hi": "औद्योगिक मशीन पर सिलाई"
+          }
+        },
+        {
+          "id": "embroidery",
+          "label": {
+            "en": "Embroidery and finishing",
+            "hi": "कढ़ाई और फिनिशिंग"
+          }
+        }
+      ],
+      "questions": [
+        {
+          "id": "equipment",
+          "label": {
+            "en": "Which equipment can you use?",
+            "hi": "आप कौन सी मशीन चला सकते हैं?"
+          },
+          "options": [
+            {
+              "id": "none",
+              "label": {
+                "en": "No machine experience",
+                "hi": "मशीन का अनुभव नहीं"
+              }
+            },
+            {
+              "id": "domestic",
+              "label": {
+                "en": "Domestic sewing machine",
+                "hi": "घरेलू सिलाई मशीन"
+              }
+            },
+            {
+              "id": "industrial",
+              "label": {
+                "en": "Industrial / overlock machine",
+                "hi": "औद्योगिक / ओवरलॉक मशीन"
+              }
+            }
+          ]
+        },
+        {
+          "id": "technique",
+          "label": {
+            "en": "Your strongest skill",
+            "hi": "आपका सबसे अच्छा हुनर"
+          },
+          "options": [
+            {
+              "id": "basic",
+              "label": {
+                "en": "Straight stitching",
+                "hi": "सीधी सिलाई"
+              }
+            },
+            {
+              "id": "cutting",
+              "label": {
+                "en": "Measurements and cutting",
+                "hi": "नाप और कटिंग"
+              }
+            },
+            {
+              "id": "pattern",
+              "label": {
+                "en": "Pattern making and design",
+                "hi": "पैटर्न बनाना और डिज़ाइन"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "beauty",
+      "label": {
+        "en": "Beauty services",
+        "hi": "ब्यूटी सेवाएँ"
+      },
+      "pattern": "beaut|salon|hair|makeup|ब्यूटी|पार्लर|बाल|मेकअप",
+      "specializations": [
+        {
+          "id": "hair",
+          "label": {
+            "en": "Hair cutting and styling",
+            "hi": "बाल काटना और स्टाइलिंग"
+          }
+        },
+        {
+          "id": "skin",
+          "label": {
+            "en": "Skin care and facials",
+            "hi": "त्वचा की देखभाल और फेशियल"
+          }
+        },
+        {
+          "id": "bridal",
+          "label": {
+            "en": "Bridal makeup",
+            "hi": "दुल्हन का मेकअप"
+          }
+        },
+        {
+          "id": "general",
+          "label": {
+            "en": "General salon services",
+            "hi": "सामान्य सैलून सेवाएँ"
+          }
+        }
+      ],
+      "questions": [
+        {
+          "id": "hygiene",
+          "label": {
+            "en": "Hygiene and client safety training",
+            "hi": "स्वच्छता और ग्राहक सुरक्षा का प्रशिक्षण"
+          },
+          "options": [
+            {
+              "id": "none",
+              "label": {
+                "en": "No formal training",
+                "hi": "औपचारिक प्रशिक्षण नहीं"
+              }
+            },
+            {
+              "id": "basic",
+              "label": {
+                "en": "Basic hygiene training",
+                "hi": "बुनियादी स्वच्छता का प्रशिक्षण"
+              }
+            },
+            {
+              "id": "certified",
+              "label": {
+                "en": "Certified beauty training",
+                "hi": "प्रमाणित ब्यूटी प्रशिक्षण"
+              }
+            }
+          ]
+        },
+        {
+          "id": "equipment",
+          "label": {
+            "en": "Access to a beauty kit",
+            "hi": "ब्यूटी किट की उपलब्धता"
+          },
+          "options": [
+            {
+              "id": "none",
+              "label": {
+                "en": "No kit yet",
+                "hi": "अभी किट नहीं है"
+              }
+            },
+            {
+              "id": "basic",
+              "label": {
+                "en": "Basic personal kit",
+                "hi": "बुनियादी निजी किट"
+              }
+            },
+            {
+              "id": "professional",
+              "label": {
+                "en": "Professional kit / salon",
+                "hi": "पेशेवर किट / सैलून"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "electrical",
+      "label": {
+        "en": "Electrician",
+        "hi": "इलेक्ट्रीशियन"
+      },
+      "pattern": "electric|wiring|बिजली|वायरिंग|इलेक्ट्री",
+      "specializations": [
+        {
+          "id": "domestic",
+          "label": {
+            "en": "Domestic wiring",
+            "hi": "घरेलू वायरिंग"
+          }
+        },
+        {
+          "id": "maintenance",
+          "label": {
+            "en": "Electrical maintenance",
+            "hi": "बिजली के उपकरणों का रखरखाव"
+          }
+        },
+        {
+          "id": "solar",
+          "label": {
+            "en": "Solar installation",
+            "hi": "सोलर इंस्टॉलेशन"
+          }
+        },
+        {
+          "id": "industrial",
+          "label": {
+            "en": "Industrial electrical work",
+            "hi": "औद्योगिक बिजली का काम"
+          }
+        }
+      ],
+      "questions": [
+        {
+          "id": "credential",
+          "label": {
+            "en": "Electrical training",
+            "hi": "बिजली के काम का प्रशिक्षण"
+          },
+          "options": [
+            {
+              "id": "none",
+              "label": {
+                "en": "No formal training",
+                "hi": "औपचारिक प्रशिक्षण नहीं"
+              }
+            },
+            {
+              "id": "apprentice",
+              "label": {
+                "en": "Supervised apprenticeship",
+                "hi": "निगरानी में अप्रेंटिसशिप"
+              }
+            },
+            {
+              "id": "iti",
+              "label": {
+                "en": "ITI / diploma",
+                "hi": "आईटीआई / डिप्लोमा"
+              }
+            }
+          ]
+        },
+        {
+          "id": "safety",
+          "label": {
+            "en": "Electrical safety experience",
+            "hi": "बिजली की सुरक्षा का अनुभव"
+          },
+          "options": [
+            {
+              "id": "none",
+              "label": {
+                "en": "Need safety training",
+                "hi": "सुरक्षा का प्रशिक्षण चाहिए"
+              }
+            },
+            {
+              "id": "basic",
+              "label": {
+                "en": "Basic PPE and isolation",
+                "hi": "बुनियादी PPE और बिजली अलग करना"
+              }
+            },
+            {
+              "id": "trained",
+              "label": {
+                "en": "Trained in testing and safe isolation",
+                "hi": "टेस्टिंग और सुरक्षित आइसोलेशन में प्रशिक्षित"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "common": [
+    {
+      "id": "experience",
+      "label": {
+        "en": "How long have you worked in this profession?",
+        "hi": "इस पेशे में कितने समय से काम कर रहे हैं?"
+      },
+      "options": [
+        {
+          "id": "new",
+          "label": {
+            "en": "Just starting",
+            "hi": "अभी शुरुआत कर रहे हैं"
+          }
+        },
+        {
+          "id": "under1",
+          "label": {
+            "en": "Less than 1 year",
+            "hi": "1 साल से कम"
+          }
+        },
+        {
+          "id": "1to3",
+          "label": {
+            "en": "1–3 years",
+            "hi": "1–3 साल"
+          }
+        },
+        {
+          "id": "3plus",
+          "label": {
+            "en": "More than 3 years",
+            "hi": "3 साल से अधिक"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mode",
+      "label": {
+        "en": "Preferred way of working / learning",
+        "hi": "काम करने / सीखने का पसंदीदा तरीका"
+      },
+      "options": [
+        {
+          "id": "local",
+          "label": {
+            "en": "Near me, in person",
+            "hi": "मेरे आसपास, आमने-सामने"
+          }
+        },
+        {
+          "id": "home",
+          "label": {
+            "en": "From home",
+            "hi": "घर से"
+          }
+        },
+        {
+          "id": "online",
+          "label": {
+            "en": "Online",
+            "hi": "ऑनलाइन"
+          }
+        },
+        {
+          "id": "relocate",
+          "label": {
+            "en": "Willing to travel / relocate",
+            "hi": "यात्रा / स्थान बदल सकते हैं"
+          }
+        }
+      ]
+    },
+    {
+      "id": "availability",
+      "label": {
+        "en": "Time you can give each day",
+        "hi": "रोज़ कितना समय दे सकते हैं?"
+      },
+      "options": [
+        {
+          "id": "part",
+          "label": {
+            "en": "Up to 2 hours",
+            "hi": "2 घंटे तक"
+          }
+        },
+        {
+          "id": "half",
+          "label": {
+            "en": "3–4 hours",
+            "hi": "3–4 घंटे"
+          }
+        },
+        {
+          "id": "full",
+          "label": {
+            "en": "Full time",
+            "hi": "पूरा समय"
+          }
+        }
+      ]
+    },
+    {
+      "id": "digital",
+      "label": {
+        "en": "Access to phone and internet",
+        "hi": "फ़ोन और इंटरनेट की सुविधा"
+      },
+      "options": [
+        {
+          "id": "no",
+          "label": {
+            "en": "Limited or no internet",
+            "hi": "सीमित या इंटरनेट नहीं"
+          }
+        },
+        {
+          "id": "phone",
+          "label": {
+            "en": "Smartphone with internet",
+            "hi": "इंटरनेट वाला स्मार्टफ़ोन"
+          }
+        },
+        {
+          "id": "computer",
+          "label": {
+            "en": "Computer and internet",
+            "hi": "कंप्यूटर और इंटरनेट"
+          }
+        }
+      ]
+    }
+  ]
+}

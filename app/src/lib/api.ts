@@ -1,3 +1,4 @@
+import type { CareerPlan, CareerProfile } from "./career";
 import Constants from 'expo-constants';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
@@ -279,6 +280,8 @@ export interface ConverseResponse {
   mappings: NsqfMapping[];
   recommendations: CourseRecommendation[];
   jobs?: JobMatch[];
+  plan?: CareerPlan;
+  personalizationNotice?: string;
   reply: { text: string; audioUrl: string; format: string };
 }
 
@@ -312,7 +315,10 @@ export async function converse(input: ConverseInput): Promise<ConverseResponse> 
   if (input.history?.length) form.append('history', JSON.stringify(input.history.slice(-8)));
   form.append('autoDetectLanguage', String(input.autoDetectLanguage ?? true));
   if (input.audioUri) {
-    form.append('audio', new File(input.audioUri), 'speech.m4a');
+    if (Platform.OS === 'web') {
+      const audio = await fetch(input.audioUri).then(r => r.blob());
+      form.append('audio', audio, /mp4|m4a/.test(audio.type) ? 'speech.m4a' : 'speech.webm');
+    } else form.append('audio', new File(input.audioUri), 'speech.m4a');
   }
 
   try {
@@ -339,19 +345,21 @@ export async function converse(input: ConverseInput): Promise<ConverseResponse> 
  * Re-rank an existing session's recommendations for the intent the user picked
  * on the confirm screen. Not a second converse() — it reuses the stored
  * transcript server-side, so no duplicate session appears in the admin funnel.
- * Ranking only: the same courses come back reordered, never filtered.
+ * A structured career profile filters incompatible specialties and returns
+ * the selected goal’s roadmap, jobs or learning recommendations.
  */
 export async function reprioritise(
   sessionId: string,
   intent: 'jobs' | 'training' | 'certificate' | 'guidance',
   location?: { state?: string | null; district?: string | null },
   skillDetails?: string,
-): Promise<{ mappings: NsqfMapping[]; recommendations: CourseRecommendation[]; jobs?: JobMatch[] } | null> {
+  profile?: CareerProfile,
+): Promise<{ plan?: CareerPlan; mappings: NsqfMapping[]; recommendations: CourseRecommendation[]; jobs?: JobMatch[] } | null> {
   try {
     const res = await fetch(`${API_BASE}/api/assistant/reprioritise`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, intent, state: location?.state, district: location?.district, skillDetails }),
+      body: JSON.stringify({ sessionId, intent, state: location?.state, district: location?.district, skillDetails, profile }),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -1019,14 +1027,17 @@ export async function applyToJob(
 
 /** Postings this beneficiary has already applied to, so the button can show
  *  "Applied" instead of offering itself again. */
-export async function getMyApplications(token: string): Promise<{ jobPostingId: string; status: string }[]> {
+export interface MyApplication { jobPostingId: string; status: string; createdAt: string; jobPosting: { title: string; titleHindi: string | null; employerName: string; source: string } }
+
+export async function getMyApplications(token: string, strict = false): Promise<MyApplication[]> {
   try {
     const res = await fetch(`${API_BASE}/api/jobs/my-applications`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error("Could not load applications");
     return await res.json();
-  } catch {
+  } catch (error) {
+    if (strict) throw error;
     return [];
   }
 }

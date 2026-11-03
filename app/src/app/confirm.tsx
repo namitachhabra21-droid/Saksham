@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
+import { getCareerProfile, getCareerPlan } from '@/lib/career';
 import { reprioritise } from '@/lib/api';
 import { UI_STRINGS } from '@/constants/languages';
 import { resolveDeviceLocation } from '@/lib/location';
@@ -26,6 +27,7 @@ export default function ConfirmScreen() {
   const { c, radius, elevation } = useTheme();
   const result = getLastResult();
   const [displayResult, setDisplayResult] = useState(result);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Intent | null>(null);
 
   const t = language ? UI_STRINGS[language] : UI_STRINGS.hi;
@@ -39,7 +41,7 @@ export default function ConfirmScreen() {
 
   useEffect(() => {
     const details = getSkillDetails();
-    if (!result?.sessionId || !details) return;
+    if (!result?.sessionId || !details || getCareerProfile(result.sessionId)) return;
     reprioritise(result.sessionId, 'guidance', { state, district }, details)
       .then((ranked) => {
         if (!ranked) return;
@@ -77,12 +79,14 @@ export default function ConfirmScreen() {
 
   async function choose(intent: Intent) {
     if (busy) return;
+    const profile = getCareerProfile(displayResult?.sessionId);
+    if (!profile && (language === 'hi' || language === 'en')) { router.push('/survey'); return; }
     setIntent(intent);
     setBusy(intent);
+    setError(null);
     stopSpeaking();
-    // Re-rank server-side for what they actually asked for. Best-effort: if
-    // the network is down reprioritise() returns null and we simply keep the
-    // ordering we already have, so the flow never blocks on it.
+    // Prepare the roadmap independently so a catalogue outage can show the
+    // personalized next steps without falling back to stale generic results.
     const current = getLastResult();
     let effectiveState = state ?? undefined;
     let effectiveDistrict = district ?? undefined;
@@ -94,18 +98,28 @@ export default function ConfirmScreen() {
         await setLocation(effectiveState, effectiveDistrict);
       }
     }
+    let plan;
+    if (profile) {
+      try { plan = await getCareerPlan(profile, intent, language!); }
+      catch { setBusy(null); setError(language === "hi" ? "योजना नहीं बन पाई। API का कनेक्शन जाँचें और फिर कोशिश करें।" : "Could not prepare your plan. Check the API connection and try again."); return; }
+    }
     if (current?.sessionId) {
       const ranked = await reprioritise(current.sessionId, intent, {
         state: effectiveState,
         district: effectiveDistrict,
-      }, getSkillDetails());
+      }, getSkillDetails(), profile ?? undefined);
       if (ranked) {
         setLastResult({
           ...current,
           mappings: ranked.mappings,
           recommendations: ranked.recommendations,
-          jobs: ranked.jobs ?? current.jobs,
+          jobs: ranked.jobs ?? [],
+          plan: ranked.plan ?? plan,
+          personalizationNotice: undefined,
+          reply: plan ? { ...current.reply, text: [plan.summary, ...plan.steps.map(s => `${s.title}. ${s.detail}`)].join(". ") } : current.reply,
         });
+      } else if (plan) {
+        setLastResult({ ...current, recommendations: [], jobs: [], plan, personalizationNotice: language === "hi" ? "कैटलॉग अभी उपलब्ध नहीं है। आपकी व्यक्तिगत योजना तैयार है; नीचे आधिकारिक पोर्टल पर खोजें।" : "The catalogue is currently unavailable. Your personalized plan is ready; search on the official portal below.", reply: { ...current.reply, text: [plan.summary, ...plan.steps.map(s => `${s.title}. ${s.detail}`)].join(". ") } });
       }
     }
     setBusy(null);
@@ -165,6 +179,8 @@ export default function ConfirmScreen() {
           </View>
         </Animated.View>
 
+        {getCareerProfile(displayResult.sessionId) && <Card><Txt variant="body">{language === 'hi' ? 'आपका विस्तृत कार्य परिचय तैयार है। अपना लक्ष्य चुनें।' : 'Your detailed work profile is ready. Choose your goal.'}</Txt><Pressable onPress={() => router.push('/survey')}><Txt tone="primary">{language === 'hi' ? 'उत्तर बदलें' : 'Edit answers'}</Txt></Pressable></Card>}
+        {error && <Txt accessibilityRole="alert" tone="dim">{error}</Txt>}
         {/* options */}
         <Animated.View entering={FadeInDown.delay(300).duration(350)} style={{ marginTop: 8 }}>
           <Txt variant="h2" center style={{ marginBottom: 14 }}>
@@ -174,6 +190,8 @@ export default function ConfirmScreen() {
             {OPTIONS.map((o, i) => (
               <Animated.View key={o.intent} entering={FadeInDown.delay(360 + i * 70).duration(300)}>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={optionLabel[o.intent]}
                   onPress={() => choose(o.intent)}
                   disabled={busy !== null}
                   style={({ pressed }) => [

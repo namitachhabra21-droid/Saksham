@@ -11,6 +11,8 @@ import { adminRouter } from "./routes/admin.js";
 import { whatsappRouter } from "./routes/whatsapp.js";
 import { stitchRouter } from "./routes/stitch.js";
 
+import { careerRouter } from "./routes/career.js";
+
 const app = express();
 
 app.use(cors());
@@ -29,6 +31,7 @@ app.get("/health", async (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/assistant", assistantRouter);
+app.use("/api/career", careerRouter);
 app.use("/api", catalogRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/whatsapp", whatsappRouter);

@@ -1,7 +1,7 @@
 {
   "name": "saksham-server",
   "version": "0.1.0",
-  "description": "Backend API for Saksham — voice-first NSQF skilling assistant for SC communities under PM-AJAY",
+  "description": "Backend API for Saksham \u2014 voice-first NSQF skilling assistant for SC communities under PM-AJAY",
   "main": "dist/index.js",
   "engines": {
     "node": "22.x"
@@ -16,7 +16,12 @@
     "prisma:push": "prisma db push",
     "seed": "tsx prisma/seed.ts",
     "scrape:nsqf-details": "tsx scripts/scrape-nsqf-details.ts",
-    "apply:nsqf-details": "tsx scripts/apply-nsqf-details.ts"
+    "apply:nsqf-details": "tsx scripts/apply-nsqf-details.ts",
+    "test:career": "node --import tsx --test tests/career.test.ts",
+    "seed:career-demo": "tsx scripts/seed-career-demo.ts",
+    "test:career-workflow": "tsx tests/career-workflow.ts",
+    "speech:setup": "bash scripts/setup-speech.sh",
+    "test:voice": "node --import tsx --test tests/voice.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

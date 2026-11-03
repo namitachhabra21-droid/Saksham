@@ -258,8 +258,7 @@ npm run install:all    # server + website + app
 
 ### 3. Optional provider keys (`server/.env`)
 
-The whole pipeline runs fully offline with zero keys (deterministic mocks).
-Set any of these to switch on the real thing — no code changes needed:
+For local speech recognition without paid keys, run `npm --prefix server run speech:setup` once (downloads the multilingual Whisper model). Configure optional cloud providers below if needed. Missing speech recognition produces a visible error; recorded audio is never replaced with canned text.
 
 ```bash
 SARVAM_API_KEY=      # primary speech-to-text, all 10 languages
@@ -294,6 +293,12 @@ Seeded logins:
 | Beneficiary | `9000000001` | `demo123` |
 
 ---
+
+## Personalized Hindi / English demo
+
+Run `npm run demo:seed` once, then `npm run demo`. Open http://localhost:8081 for the detailed teaching, tailoring, beauty and electrician surveys, separate job/training roadmaps, and application tracking. The local website on :3000 links to this app. Demo jobs are explicitly labelled SAMPLE.
+
+See [the demonstration walkthrough](docs/CAREER-DEMO.md) for contrasting teacher profiles, application steps, data limitations and verification commands.
 
 ## Run
 

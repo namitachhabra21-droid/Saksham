@@ -165,6 +165,7 @@ export default function ProfileScreen() {
           )}
         </Card>
 
+        <Button label={language === 'hi' ? 'मेरे नौकरी के आवेदन' : 'My job applications'} variant="secondary" icon="briefcase-outline" onPress={() => router.push('/applications')} />
         {token ? (
           <Button label={t.logout} variant="danger" icon="log-out-outline" onPress={logout} />
         ) : (

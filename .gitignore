@@ -16,3 +16,14 @@ web-build/
 
 # misc
 *.tsbuildinfo
+
+# Local speech runtime (rebuild with npm --prefix server run speech:setup)
+.venv-speech/
+__pycache__/
+
+# e2e test outputs (artifacts/voice/*.wav are test inputs and stay tracked)
+artifacts/*.png
+artifacts/*.json
+
+# Vercel CLI project links
+.vercel/

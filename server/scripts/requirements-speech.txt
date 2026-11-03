@@ -1,0 +1,4 @@
+faster-whisper==1.2.1
+
+# Newer PyAV removed an API used by this faster-whisper release.
+av==16.1.0

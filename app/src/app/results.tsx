@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -25,6 +25,8 @@ const PAGE_SIZE = 5;
 export default function ResultsScreen() {
   const { language } = useStore();
   const { c, radius } = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
+  const [jobsOffset, setJobsOffset] = useState(0);
   const result = getLastResult();
   const intent = getIntent();
   const { token } = useAuth();
@@ -39,10 +41,15 @@ export default function ResultsScreen() {
   }, [token]);
 
   async function applyTo(j: JobMatch) {
+    if (j.source === "NCS") {
+      if (j.applyUrl) await Linking.openURL(j.applyUrl).catch(() => Alert.alert(t.tryAgain));
+      return;
+    }
     // Applying needs an account: a programme officer has to be able to call
     // this person back, and a guest session carries no name or number. Send
     // them to sign in and bring them straight back here.
     if (!token) {
+      if (Platform.OS === 'web') { router.push('/auth?returnTo=/results'); return; }
       Alert.alert(t.loginToApply, t.loginToApplyBody, [
         { text: t.cancel, style: 'cancel' },
         { text: t.loginBtn, onPress: () => router.push('/auth?returnTo=/results') },
@@ -128,7 +135,7 @@ export default function ResultsScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* transcript */}
         <Card index={0}>
           <Txt variant="overline" tone="faint">
@@ -142,6 +149,22 @@ export default function ResultsScreen() {
           </View>
         </Card>
 
+        {result.plan && <Card index={1} style={{ gap: 14 }}>
+          <Txt variant="h2">{language === 'hi' ? 'आपकी व्यक्तिगत कार्ययोजना' : 'Your personalized roadmap'}</Txt>
+          <Txt variant="bodyLg">{result.plan.summary}</Txt>
+          <Txt variant="caption" tone="dim">{language === 'hi' ? 'यह मार्गदर्शन आपके सर्वे के उत्तरों और तय नियमों पर आधारित है। नौकरी या कोर्स की पात्रता की पुष्टि संबंधित संस्था से करें।' : 'This guidance uses your survey answers and predefined rules. Confirm job or course eligibility with the employer or training provider.'}</Txt>
+          {result.plan.profile.notes ? <Txt tone="dim">{language === 'hi' ? 'आपकी अतिरिक्त जानकारी: ' : 'Your additional information: '}{result.plan.profile.notes}</Txt> : null}
+          {!!result.personalizationNotice && <Txt tone="dim">{result.personalizationNotice}</Txt>}
+          {result.plan.gaps.map((gap, i) => <Txt key={i} variant="body" tone="dim">• {gap}</Txt>)}
+          {result.plan.steps.map((step, i) => <View key={i} style={{ gap: 5 }}><Txt variant="h2">{step.title}</Txt><Txt variant="body" tone="dim">{step.detail}</Txt></View>)}
+          <Txt variant="body">{result.plan.searchHint}</Txt>
+          {intent === 'jobs' && <Button label={language === 'hi' ? 'सक्षम में नौकरियाँ देखें' : 'View matching jobs in Saksham'} icon="briefcase-outline" onPress={() => scrollRef.current?.scrollTo({ y: jobsOffset, animated: true })} />}
+          {intent === 'jobs' && <Txt variant="caption" tone="dim">{language === 'hi' ? 'नीचे सक्षम के जॉब कार्ड हैं। NCS एक वैकल्पिक बाहरी वेबसाइट है; उसे खोलने से आवेदन जमा नहीं होता।' : 'Saksham job cards appear below. NCS is an optional external website; opening it does not submit an application.'}</Txt>}
+          <Button label={intent === 'jobs' ? (language === 'hi' ? 'वैकल्पिक: NCS पर खोजें (बाहरी)' : 'Optional: search NCS (external)') : result.plan.action.label} variant={intent === 'jobs' ? 'secondary' : 'primary'} icon="open-outline" onPress={() => Linking.openURL(result.plan!.action.url).catch(() => Alert.alert(t.tryAgain))} />
+          <Button variant="secondary" size="md" label={language === 'hi' ? 'अपने उत्तर या लक्ष्य बदलें' : 'Change your answers or goal'} onPress={() => router.push('/survey')} />
+        </Card>}
+
+        {intent === 'jobs' && <Button label={language === 'hi' ? 'मेरे आवेदन और स्थिति देखें' : 'View my applications and status'} variant="secondary" onPress={() => router.push('/applications')} />}
         {/* nsqf */}
         {known.length > 0 ? (
           known.map((m, i) => (
@@ -157,8 +180,8 @@ export default function ResultsScreen() {
         )}
 
         {/* jobs — real vacancies matched to the spoken skill */}
-        {jobs.length > 0 && (
-          <View style={{ gap: 12, marginTop: 4 }}>
+        {intent === 'jobs' && jobs.length > 0 && (
+          <View onLayout={event => setJobsOffset(event.nativeEvent.layout.y)} style={{ gap: 12, marginTop: 4 }}>
             <View style={styles.sectionHead}>
               <Ionicons name="briefcase" size={18} color={c.primary} />
               <Txt variant="h2">{t.jobsAvailable}</Txt>
@@ -172,6 +195,7 @@ export default function ResultsScreen() {
               <JobCard
                 key={j.jobPostingId}
                 j={j}
+                hindi={language === "hi"}
                 t={t}
                 index={i + 2}
                 applied={appliedIds.has(j.jobPostingId)}
@@ -184,7 +208,7 @@ export default function ResultsScreen() {
         )}
 
         {intent === 'jobs' && jobs.length === 0 && (
-          <Card index={2} style={{ gap: 12 }}>
+          <View onLayout={event => setJobsOffset(event.nativeEvent.layout.y)}><Card index={2} style={{ gap: 12 }}>
             <View style={styles.sectionHead}>
               <Ionicons name="briefcase" size={18} color={c.primary} />
               <Txt variant="h2">{t.jobsAvailable}</Txt>
@@ -199,7 +223,7 @@ export default function ResultsScreen() {
               icon="mic"
               onPress={() => router.replace('/main/speak')}
             />
-          </Card>
+          </Card></View>
         )}
 
         {/* recommendations */}
@@ -221,6 +245,7 @@ export default function ResultsScreen() {
           </View>
         )}
 
+        {intent !== 'jobs' && result.recommendations.length === 0 && result.plan && <Card><Txt tone="dim">{language === 'hi' ? 'कैटलॉग में आपकी विशेषज्ञता का उपयुक्त कोर्स नहीं मिला। ऊपर दिए प्रशिक्षण पोर्टल पर केंद्र और बैच की पुष्टि करें।' : 'No suitable catalogue course was found for your specialization. Use the training portal above to confirm providers and batches.'}</Txt></Card>}
         <View style={{ height: 8 }} />
       </ScrollView>
 
@@ -317,6 +342,7 @@ function NsqfCard({
 
 function JobCard({
   j,
+  hindi,
   t,
   index,
   applied,
@@ -324,6 +350,7 @@ function JobCard({
   onApply,
 }: {
   j: JobMatch;
+  hindi: boolean;
   t: (typeof UI_STRINGS)['hi'];
   index: number;
   applied: boolean;
@@ -338,7 +365,7 @@ function JobCard({
       <View style={styles.progHead}>
         <View style={{ flex: 1, gap: 4 }}>
           <Txt variant="h2" style={{ lineHeight: 24 }}>
-            {j.titleHindi ?? j.title}
+            {hindi ? j.titleHindi ?? j.title : j.title}
           </Txt>
           <Txt variant="body" tone="dim">
             {j.employerName}
@@ -401,7 +428,7 @@ function JobCard({
       )}
 
       <Button
-        label={applied ? t.applied : applying ? t.applying : t.apply}
+        label={j.source === "NCS" ? (hindi ? "पोर्टल पर नौकरी खोजें" : "Search jobs on portal") : applied ? t.applied : applying ? t.applying : t.apply}
         variant={applied ? 'secondary' : 'success'}
         size="md"
         icon={applied ? 'checkmark' : 'arrow-forward'}

@@ -12,21 +12,15 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  RecordingPresets,
-  requestRecordingPermissionsAsync,
-  setAudioModeAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-} from 'expo-audio';
+
 
 import { converse, type ConverseResponse, type LanguageCode } from '@/lib/api';
 import { LANGUAGES, UI_STRINGS } from '@/constants/languages';
 import { loadHistory, saveConversation, type ConversationRecord } from '@/lib/conversationHistory';
 import { setLastResult } from '@/lib/session';
 import { revealPortion, speak, stopSpeaking } from '@/lib/speech';
-import { transcribeWithSarvam } from '@/lib/transcription';
-import { useAutoStopRecording } from '@/lib/useAutoStopRecording';
+import { useVoiceInput } from '@/lib/useVoiceInput';
+
 import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/theme';
@@ -41,18 +35,23 @@ export default function SpeakScreen() {
   const { language, state, district, guestProfile } = useStore();
   const { user } = useAuth();
   const { c, radius, elevation } = useTheme();
-  const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
-  const recState = useAudioRecorderState(recorder, 100);
-  // metering is in dBFS (~-50 quiet room floor to 0 clipping) — normalize to 0-1
-  // so the mic orb's swirl/pulse can react to the beneficiary's actual voice.
-  const micLevel = recState.isRecording
-    ? Math.min(1, Math.max(0, ((recState.metering ?? -50) + 50) / 50))
-    : 0;
   const [busy, setBusy] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
+  const [currentResult, setCurrentResult] = useState<ConverseResponse | null>(null);
+  const [agentError, setAgentError] = useState<string | null>(null);
+
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
   const [typed, setTyped] = useState('');
   const [showType, setShowType] = useState(false);
+  const [heardSpeech, setHeardSpeech] = useState(false);
+  const voice = useVoiceInput(language ?? 'hi', transcript => {
+    setTyped(transcript);
+    setShowType(true);
+    setHeardSpeech(true);
+  }, busy);
+  const transcribing = voice.transcribing || voice.starting;
+  const micLevel = voice.level;
+  const recState = { isRecording: voice.recording, durationMillis: voice.duration };
+  const toggleRecord = voice.toggle;
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<ConversationRecord[]>([]);
   // reveals the latest agent bubble word-by-word, paced to the spoken audio
@@ -108,6 +107,7 @@ export default function SpeakScreen() {
   }
 
   function routeAfterSkill(result: ConverseResponse) {
+    if (language === 'hi' || language === 'en') { router.push('/survey'); return; }
     const skill = capturedSkill(result);
     router.push(
       // Work-profile answers are quick, and re-asking keeps demos honest after
@@ -129,12 +129,7 @@ export default function SpeakScreen() {
     }
   }, [language]);
 
-  useAutoStopRecording({
-    isRecording: recState.isRecording,
-    level: micLevel,
-    durationMillis: recState.durationMillis ?? 0,
-    onStop: toggleRecord,
-  });
+
 
   if (!language) return null;
 
@@ -148,6 +143,7 @@ export default function SpeakScreen() {
         : t.agentTapToTalk;
 
   async function submit(payload: { transcript?: string; audioUri?: string }, turnLanguage: LanguageCode = language!) {
+    setAgentError(null);
     setBusy(true);
     try {
       const result = await converse({
@@ -161,6 +157,7 @@ export default function SpeakScreen() {
         autoDetectLanguage: true,
       });
       setLastResult(result);
+      setCurrentResult(result);
       setShowType(false);
       setTyped('');
       const spokenText = payload.transcript ?? result.transcript;
@@ -183,7 +180,7 @@ export default function SpeakScreen() {
         );
       }
     } catch (e) {
-      Alert.alert(t.tryAgain, String(e));
+      setAgentError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -202,6 +199,7 @@ export default function SpeakScreen() {
     const clean = text.trim();
     if (!clean) return;
 
+    setAgentError(null);
     setBusy(true);
     setShowType(false);
     setTyped('');
@@ -222,6 +220,7 @@ export default function SpeakScreen() {
       // the server or STT inferred — see the note in the transcription branch.
       const replyLanguage = turnLanguage;
       setLastResult(result);
+      setCurrentResult(result);
       const replyText = result.reply.text || t.agentFallbackReply;
       const withReply = withUser.concat({ role: 'assistant' as const, text: replyText });
       setAgentMessages(withReply);
@@ -233,49 +232,12 @@ export default function SpeakScreen() {
       // reply is already shown and spoken, so they can simply try again.
       if (understoodSkill(result)) routeAfterSkill(result);
     } catch (e) {
-      Alert.alert(t.tryAgain, String(e));
+      setAgentError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }
 
-  async function toggleRecord() {
-    if (busy || transcribing) return;
-    if (recState.isRecording) {
-      await recorder.stop();
-      const audioUri = recorder.uri;
-      if (!audioUri) {
-        Alert.alert(t.noSpeechDetected);
-        return;
-      }
-      setTranscribing(true);
-      try {
-        const result = await transcribeWithSarvam(audioUri, language!);
-        // Auto-detection helps STT transcribe accurately, but it must never
-        // change the language we reply in — and `setLanguage` persists, so a
-        // single misdetection (Indian-accented English reads as Hindi very
-        // easily) used to switch the whole app for good. The beneficiary chose
-        // a language; only they get to change it, from the language screen.
-        await runAgentTurn(result.transcript, language!);
-      } catch (e) {
-        Alert.alert(t.transcriptionError, e instanceof Error ? e.message : String(e));
-      } finally {
-        setTranscribing(false);
-      }
-      return;
-    }
-    const { granted } = await requestRecordingPermissionsAsync();
-    if (!granted) {
-      Alert.alert('Microphone permission needed', undefined);
-      return;
-    }
-    stopSpeaking();
-    setReveal(null);
-    setShowType(false);
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record();
-  }
 
   function changeLanguage() {
     router.push('/language');
@@ -346,6 +308,7 @@ export default function SpeakScreen() {
             </Animated.View>
           )}
 
+          {!!(voice.error || agentError) && <View accessibilityRole="alert" style={{ padding: 16, gap: 8 }}><Txt tone="danger">{voice.error || agentError}</Txt><Txt tone="dim">You can retry the microphone or type your answer below.</Txt></View>}
           <Animated.View entering={FadeIn.duration(500)} style={styles.micWrap}>
             <MicOrb state={micState} onPress={toggleRecord} level={micLevel} />
             <View key={status}>
@@ -421,6 +384,7 @@ export default function SpeakScreen() {
                   <TypingDots color={c.primary} />
                 </View>
               )}
+              {currentResult && !understoodSkill(currentResult) && (language === 'hi' || language === 'en') && <Button label="Choose profession and customize" variant="secondary" onPress={() => router.push('/survey')} />}
               <View style={styles.actionRow}>
                 <Button
                   label={t.clearAgent}
@@ -473,6 +437,8 @@ export default function SpeakScreen() {
 
           {showType && (
             <Animated.View entering={FadeInDown.duration(300)} style={styles.typeBox}>
+              {heardSpeech && <Txt tone="primary">{language === 'hi' ? 'आपने यह कहा। जाँचकर भेजें या सुधारें।' : 'I heard this. Review or edit it, then send.'}</Txt>}
+              {heardSpeech && voice.needsReview && <Txt tone="danger">Low-confidence transcription. Please correct any mistakes before sending.</Txt>}
               <TextInput
                 value={typed}
                 onChangeText={setTyped}
@@ -490,13 +456,20 @@ export default function SpeakScreen() {
                 icon="send"
                 onPress={() => sendTranscript(typed)}
                 loading={busy}
-                disabled={!typed.trim()}
+                disabled={!typed.trim() || transcribing || recState.isRecording}
               />
             </Animated.View>
           )}
         </ScrollView>
 
         <View style={styles.bottom}>
+          {Platform.OS === 'web' && !recState.isRecording && !transcribing && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Button size="md" fullWidth={false} variant={voice.voiceLanguage === 'en' ? 'primary' : 'secondary'} label="Voice: English" onPress={() => voice.setVoiceLanguage('en')} />
+            <Button size="md" fullWidth={false} variant={voice.voiceLanguage === 'hi' ? 'primary' : 'secondary'} label="Voice: Hindi / Hinglish" onPress={() => voice.setVoiceLanguage('hi')} />
+          </View>}
+          {!!voice.partial && recState.isRecording && <Txt tone="primary">Hearing: {voice.partial}</Txt>}
+          <Button label={recState.isRecording ? "Stop recording" : "Start recording"} icon={recState.isRecording ? "stop-circle-outline" : "mic-outline"} disabled={busy || transcribing} onPress={toggleRecord} />
+          <Txt variant="caption" center tone="dim">{recState.isRecording ? 'Listening… speak clearly, then tap Stop recording.' : 'Tap the microphone to start. Allow microphone access when asked.'}</Txt>
           <Button
             label={showType ? t.agentTapToTalk : t.typeInstead}
             variant="secondary"

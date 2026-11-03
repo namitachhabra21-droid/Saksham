@@ -298,7 +298,8 @@ catalogRouter.post("/jobs/:id/apply", authenticate, async (req, res) => {
 catalogRouter.get("/jobs/my-applications", authenticate, async (req, res) => {
   const rows = await prisma.jobApplication.findMany({
     where: { userId: req.auth!.userId },
-    select: { jobPostingId: true, status: true, createdAt: true },
+    select: { jobPostingId: true, status: true, createdAt: true, jobPosting: { select: { title: true, titleHindi: true, employerName: true, source: true } } },
+    orderBy: { createdAt: "desc" },
   });
   res.json(rows);
 });

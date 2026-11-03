@@ -152,6 +152,9 @@ export function MicOrb({ state, onPress, size = 168, level = 0 }: Props) {
       <Animated.View style={core}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={state === "listening" ? "Stop recording" : state === "thinking" ? "Processing speech" : "Start recording"}
+          accessibilityState={{ disabled: state === "thinking" }}
+          disabled={state === "thinking"}
           onPress={onPress}
           style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}>
           <View

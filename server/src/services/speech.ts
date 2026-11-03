@@ -1,3 +1,5 @@
+import { canSpeakLocally, synthesizeLocally } from "./localTts.js";
+import { localSpeechConfig, transcribeLocally } from "./localSpeech.js";
 import { env, hasBhashini, hasGroq, hasSarvam } from "../lib/env.js";
 import { GROQ_TRANSCRIPTION_URL, GROQ_WHISPER_MODEL } from "../lib/groq.js";
 import type { Language } from "@prisma/client";
@@ -12,8 +14,9 @@ import type { Language } from "@prisma/client";
 
 export interface TranscribeResult {
   transcript: string;
+  needsReview?: boolean;
   language: Language;
-  provider: "sarvam" | "groq" | "bhashini";
+  provider: "sarvam" | "groq" | "bhashini" | "local-whisper";
   /** Only present when the provider actually reports one (Sarvam's
    *  language_probability). Absent means unknown — never a stand-in value. */
   confidence?: number;
@@ -22,13 +25,13 @@ export interface TranscribeResult {
 export interface SynthesizeResult {
   /** base64 `data:` URI (sarvam/mock) or CDN URL (bhashini) of the spoken audio */
   audioUrl: string;
-  provider: "sarvam" | "bhashini" | "mock";
+  provider: "sarvam" | "bhashini" | "mock" | "local-device";
   format: "wav" | "mp3" | "text";
 }
 
 export class TranscriptionUnavailableError extends Error {
-  constructor() {
-    super("Speech transcription is not configured. Add SARVAM_API_KEY or GROQ_API_KEY to server/.env, then restart the server.");
+  constructor(message = "Speech recognition is unavailable. Please try again or use Type instead.") {
+    super(message);
     this.name = "TranscriptionUnavailableError";
   }
 }
@@ -70,27 +73,33 @@ export async function transcribeAudio(
   language: Language = "hi",
   options: TranscribeOptions = {},
 ): Promise<TranscribeResult> {
-  if (audio?.length) {
-    if (hasSarvam) {
-      try {
-        return await callSarvamASR(audio, language, options);
-      } catch (err) {
-        if (!hasGroq) throw err;
-        console.error("[speech] Sarvam STT failed, falling back to Groq:", err);
-      }
-    }
-    if (hasGroq) {
-      return callGroqASR(audio, language, options);
+  if (!audio?.length) throw new TranscriptionUnavailableError('No recording was received. Please record your message again.');
+  let lastError: unknown;
+  // This local demo can recognize speech even when provider credits run out.
+  // A warmed/downloaded local model is preferred; no download happens here.
+  if (localSpeechConfig().available) {
+    try {
+      const result = await transcribeLocally(audio, options.autoDetect ? 'auto' : language);
+      const detected = result.language in SARVAM_LANGUAGE_CODES ? result.language as Language : language;
+      return { ...result, language: detected, provider: 'local-whisper' };
+    } catch (error) {
+      if (error instanceof Error && /No clear speech|timed out|busy/.test(error.message)) throw new TranscriptionUnavailableError(error.message);
+      lastError = error; console.error('[speech] Local STT failed:', error instanceof Error ? error.message : 'unknown');
     }
   }
-  // Bhashini was never implemented. Leaving an empty `if (hasBhashini)` here
-  // made the config look wired: setting Bhashini keys and nothing else would
-  // fall straight through to the error below with no indication why.
-  if (hasBhashini) {
-    console.error(
-      "[speech] BHASHINI_API_KEY is set but Bhashini ASR is not implemented — set SARVAM_API_KEY or GROQ_API_KEY instead",
-    );
+  if (hasSarvam && Date.now() >= sarvamDisabledUntil) {
+    try { return await callSarvamASR(audio, language, options); }
+    catch (error) {
+      lastError = error;
+      if (/\b(401|402|403)\b/.test(error instanceof Error ? error.message : '')) sarvamDisabledUntil = Date.now() + SARVAM_COOLOFF_MS;
+      console.error('[speech] Sarvam STT unavailable; trying the next configured provider.');
+    }
   }
+  if (hasGroq) {
+    try { return await callGroqASR(audio, language, options); }
+    catch (error) { lastError = error; console.error('[speech] Groq STT unavailable.'); }
+  }
+  if (lastError instanceof Error && /No clear speech|timed out|busy/.test(lastError.message)) throw new TranscriptionUnavailableError(lastError.message);
   throw new TranscriptionUnavailableError();
 }
 
@@ -117,6 +126,7 @@ async function callSarvamASR(
   form.append("language_code", options.autoDetect ? "unknown" : SARVAM_LANGUAGE_CODES[language]);
 
   const res = await fetch(SARVAM_STT_URL, {
+    signal: AbortSignal.timeout(20000),
     method: "POST",
     headers: { "api-subscription-key": env.sarvamApiKey },
     body: form,
@@ -185,6 +195,7 @@ async function callGroqASR(
   if (!options.autoDetect) form.append("language", language);
 
   const res = await fetch(GROQ_TRANSCRIPTION_URL, {
+    signal: AbortSignal.timeout(20000),
     method: "POST",
     headers: { Authorization: `Bearer ${env.groqApiKey}` },
     body: form,
@@ -235,6 +246,10 @@ export async function synthesizeSpeech(
   language: Language = "hi",
 ): Promise<SynthesizeResult> {
   const clean = spokenTextForTts(text, language).trim();
+  if (clean && canSpeakLocally(language)) {
+    try { return await synthesizeLocally(clean, language); }
+    catch { console.error('[speech] Local voice unavailable; trying configured TTS.'); }
+  }
   if (clean && hasSarvam && Date.now() >= sarvamDisabledUntil) {
     try {
       return await callSarvamTTS(clean, language);
@@ -276,6 +291,7 @@ interface SarvamTTSResponse {
  *  it. `bulbul:v2` caps `text` at 1,500 characters. */
 async function callSarvamTTS(text: string, language: Language): Promise<SynthesizeResult> {
   const res = await fetch(SARVAM_TTS_URL, {
+    signal: AbortSignal.timeout(12000),
     method: "POST",
     headers: {
       "api-subscription-key": env.sarvamApiKey,

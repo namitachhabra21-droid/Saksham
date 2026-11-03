@@ -4,9 +4,9 @@ services:
     runtime: node
     plan: free
     region: ohio
-    repo: https://github.com/varuntutejaa/Saksham
+    repo: https://github.com/namitachhabra21-droid/Saksham
     rootDir: server
-    branch: main
+    branch: hosting
     buildCommand: npm install --include=dev && npm run prisma:generate && npm run build
     # Runs once per actual deploy — NOT on every cold-start wake from the free
     # plan's spin-down. Pushing schema + reseeding here (rather than in
@@ -14,6 +14,8 @@ services:
     # the full ~1,300-row NSQF + 2,300-row PM-AJAY-course + RAG-chunk seed
     # every time the service woke from idle, turning a 30s Render cold start
     # into several minutes.
+    # NOTE: Render runs preDeployCommand only on paid plans. On the free plan,
+    # seed once from a laptop instead: DATABASE_URL=<neon url> npm run db:setup
     preDeployCommand: npm run prisma:push && npm run seed
     startCommand: npm start
     healthCheckPath: /health

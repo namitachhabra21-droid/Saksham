@@ -1,3 +1,5 @@
+import type { CareerProfile } from "./career.js";
+import { profileRelevance } from "./careerRanking.js";
 import { prisma } from "../lib/prisma.js";
 import type { MappingResult } from "./nsqf.js";
 
@@ -34,6 +36,7 @@ interface MatchInput {
   district?: string | null;
   skillDetails?: string | null;
   limit?: number;
+  profile?: CareerProfile;
 }
 
 function normalizeLocation(value: string | null | undefined): string | null {
@@ -132,7 +135,7 @@ function detailScore(job: { title: string; description: string | null; skillToke
  *   0.10  sector matches the mapped qualification's sector
  */
 export async function matchJobs(input: MatchInput): Promise<JobMatch[]> {
-  const { mappings, state, district, skillDetails, limit = 20 } = input;
+  const { mappings, state, district, skillDetails, profile, limit = 20 } = input;
 
   const matched = mappings.filter((m) => m.normalizedSkill !== "unknown");
   const tokens = [...new Set(matched.map((m) => m.normalizedSkill.toLowerCase()))];
@@ -163,6 +166,8 @@ export async function matchJobs(input: MatchInput): Promise<JobMatch[]> {
   const beneficiaryState = normalizeLocation(state);
   const beneficiaryDistrict = normalizeLocation(district);
 
+  if (profile) jobs = jobs.filter(job => profileRelevance(`${job.title} ${job.description ?? ""}`, profile, "job") >= 0);
+
   const scored = jobs.map((job) => {
     const hit = job.skillTokens.find((t) => searchTokens.includes(t.toLowerCase()));
     const source =
@@ -185,6 +190,7 @@ export async function matchJobs(input: MatchInput): Promise<JobMatch[]> {
     const details = normalizeText(skillDetails);
     const detailBoost = detailScore(job, details);
     score += detailBoost;
+    if (profile) score += profileRelevance(`${job.title} ${job.description ?? ""}`, profile, "job");
 
     return {
       jobPostingId: job.id,
@@ -215,7 +221,7 @@ export async function matchJobs(input: MatchInput): Promise<JobMatch[]> {
     .slice(0, limit)
     .map(({ detailBoost: _detailBoost, ...job }) => job);
 
-  if (ranked.length === 0 && tokens.includes("academic-tutoring")) {
+  if (!profile && ranked.length === 0 && tokens.includes("academic-tutoring")) {
     return academicTutoringFallbackJobs(matched, skillDetails ?? "", Math.min(5, limit));
   }
 
