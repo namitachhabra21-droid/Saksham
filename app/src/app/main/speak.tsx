@@ -106,8 +106,12 @@ export default function SpeakScreen() {
     return capturedSkill(result) !== null;
   }
 
+  /** Hindi and English go on to the detailed survey, which speaks its own
+   *  questions — so nothing from this screen may keep talking over it. */
+  const surveyFlow = language === 'hi' || language === 'en';
+
   function routeAfterSkill(result: ConverseResponse) {
-    if (language === 'hi' || language === 'en') { router.push('/survey'); return; }
+    if (surveyFlow) { stopSpeaking(); setReveal(null); router.push('/survey'); return; }
     const skill = capturedSkill(result);
     router.push(
       // Work-profile answers are quick, and re-asking keeps demos honest after
@@ -225,7 +229,9 @@ export default function SpeakScreen() {
       const withReply = withUser.concat({ role: 'assistant' as const, text: replyText });
       setAgentMessages(withReply);
       setReveal(null);
-      speak(replyText, replyLanguage);
+      // The NSQF reply is only read aloud when we stay on this screen; the
+      // survey flow reads its own questions instead.
+      if (!(surveyFlow && understoodSkill(result))) speak(replyText, replyLanguage);
       const updated = await saveConversation(ensureSessionId(), withReply);
       setHistory(updated);
       // as above: only move on once we actually understood the skill. The
@@ -384,7 +390,7 @@ export default function SpeakScreen() {
                   <TypingDots color={c.primary} />
                 </View>
               )}
-              {currentResult && !understoodSkill(currentResult) && (language === 'hi' || language === 'en') && <Button label="Choose profession and customize" variant="secondary" onPress={() => router.push('/survey')} />}
+              {currentResult && !understoodSkill(currentResult) && surveyFlow && <Button label={language === 'hi' ? 'अपना काम चुनें और सवालों के जवाब दें' : 'Choose your work and answer a few questions'} variant="secondary" onPress={() => { stopSpeaking(); router.push('/survey'); }} />}
               <View style={styles.actionRow}>
                 <Button
                   label={t.clearAgent}
@@ -404,7 +410,7 @@ export default function SpeakScreen() {
                   size="md"
                   icon="school-outline"
                   fullWidth={false}
-                  onPress={() => router.push('/results')}
+                  onPress={() => { stopSpeaking(); router.push('/results'); }}
                 />
               </View>
             </Animated.View>

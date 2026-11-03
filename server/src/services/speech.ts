@@ -138,7 +138,9 @@ async function callSarvamASR(
 
   const body = (await res.json()) as SarvamSpeechResponse;
   const transcript = body.transcript?.trim();
-  if (!transcript) throw new Error("Sarvam returned an empty transcript");
+  // An empty transcript is silence or noise, not an outage — say so, so the
+  // user is asked to speak again instead of being told the service is down.
+  if (!transcript) throw new Error("No clear speech was heard. Move closer to the microphone and try again.");
 
   const detectedLanguage = body.language_code ? LANGUAGE_BY_SARVAM_CODE[body.language_code] : undefined;
   return {

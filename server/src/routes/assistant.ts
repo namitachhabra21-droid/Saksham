@@ -6,6 +6,8 @@ import { transcribeAudio, synthesizeSpeech, TranscriptionUnavailableError } from
 import { mapTranscriptToNsqf } from "../services/nsqf.js";
 import { recommendCourses } from "../services/recommend.js";
 import { careerProfileSchema, careerDetailText, buildCareerPlan } from "../services/career.js";
+import { isFocusProfession } from "../services/careerQualifications.js";
+import { matchJobsForProfile, profileMappings, recommendCoursesForProfile } from "../services/careerMatch.js";
 import { matchJobs } from "../services/jobs.js";
 import { buildSpokenReply } from "../services/reply.js";
 import { answerFromDocuments } from "../services/rag.js";
@@ -191,10 +193,12 @@ assistantRouter.post("/reprioritise", async (req, res) => {
     district: z.string().optional(),
     skillDetails: z.string().max(2000).optional(),
     profile: careerProfileSchema.optional(),
+    /** UI language for the plan and reasons; defaults to the session's */
+    language: z.enum(["hi", "en"]).optional(),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  const { sessionId, intent, state, district, skillDetails, profile } = parsed.data;
+  const { sessionId, intent, state, district, skillDetails, profile, language } = parsed.data;
 
   const session = await prisma.voiceSession.findUnique({ where: { id: sessionId } });
   if (!session) return res.status(404).json({ error: "Session not found" });
@@ -209,6 +213,19 @@ assistantRouter.post("/reprioritise", async (req, res) => {
         district: effectiveDistrict ?? null,
       },
     });
+  }
+
+  // Focus trades with a survey profile: the answers alone choose the NSQF
+  // qualifications, courses and jobs (services/careerMatch.ts), so the result
+  // changes whenever an answer does — no transcript needed.
+  if (profile && isFocusProfession(profile.profession)) {
+    const planLanguage = language ?? (session.language === "hi" ? "hi" : "en");
+    const { picks, mappings } = await profileMappings(profile, planLanguage);
+    const [recommendations, jobs] = await Promise.all([
+      intent === "jobs" ? [] : recommendCoursesForProfile({ profile, picks, intent, state: effectiveState, language: planLanguage }),
+      intent === "jobs" ? matchJobsForProfile({ profile, picks, state: effectiveState, district: effectiveDistrict, language: planLanguage }) : [],
+    ]);
+    return res.json({ sessionId, intent, mappings, recommendations, jobs, plan: buildCareerPlan(profile, intent, planLanguage) });
   }
 
   // a session recorded with no usable transcript has nothing to re-rank
@@ -230,7 +247,7 @@ assistantRouter.post("/reprioritise", async (req, res) => {
     matchJobs({ mappings, state: effectiveState, district: effectiveDistrict, skillDetails: detailText, profile }),
   ]);
 
-  res.json({ sessionId, intent, mappings, recommendations: intent === "jobs" ? [] : recommendations, jobs: intent === "jobs" ? jobs : [], plan: profile ? buildCareerPlan(profile, intent, session.language) : undefined });
+  res.json({ sessionId, intent, mappings, recommendations: intent === "jobs" ? [] : recommendations, jobs: intent === "jobs" ? jobs : [], plan: profile ? buildCareerPlan(profile, intent, language ?? session.language) : undefined });
 });
 
 /**

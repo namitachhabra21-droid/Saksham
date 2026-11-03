@@ -165,20 +165,43 @@ already mapped). Reuses the session's stored transcript, so — unlike calling
 funnel still shows one session per spoken utterance.
 ```jsonc
 // request
-{ "sessionId": "cmtm...", "intent": "jobs" }   // jobs|training|certificate|guidance
+{
+  "sessionId": "cmtm...",
+  "intent": "jobs",                 // jobs|training|certificate|guidance
+  "state": "Delhi", "district": "New Delhi",   // optional
+  "language": "hi",                 // optional, hi|en — language of plan + reasons (default: session's)
+  "profile": {                      // optional — the survey answers (GET /api/career/catalog)
+    "profession": "tailoring", "specialization": "womenswear",
+    "answers": { "experience": "3plus", "mode": "local", "availability": "half", "digital": "phone", "equipment": "industrial", "technique": "pattern" },
+    "state": "Delhi", "district": "New Delhi", "notes": ""
+  }
+}
 // 200
 {
   "sessionId": "cmtm...",
   "intent": "jobs",
-  "mappings": [ /* same shape as /converse */ ],
-  "recommendations": [ /* same shape as /converse, reordered */ ]
+  "mappings": [ /* /converse shape; with a profile also: */
+    { "qpCode": "QG-04-AP-03282-2024-V2-AMHSSC", "title": "Pattern Master - Apparel", "titleHi": "पैटर्न मास्टर",
+      "nsqfLevel": 4, "method": "profile", "fit": "recommended",   // recommended | alternative | next
+      "reason": "Your answers (More than 3 years; ...) put you at the advanced step. NSQF level 4: about 420 hours ...",
+      "trainingHours": 420, "trainingWeeks": 20, "...": "..." }
+  ],
+  "recommendations": [ /* courses; [] when intent is jobs */ ],
+  "jobs": [ /* JobMatch; [] unless intent is jobs */ ],
+  "plan": { /* with a profile: roadmap, steps, `qualifications` (the picks above) and `spoken` (short voice summary) */ }
 }
 ```
 Notes:
-- Ranking only — the same courses come back in a different order. Nothing is
-  filtered out.
-- `404` if the session id is unknown. A session recorded without a usable
-  transcript returns empty `mappings`/`recommendations` rather than an error.
+- **With a `profile` for a focus trade (tailoring, beauty, electrical)** the
+  answers alone decide the result: `server/src/services/careerQualifications.ts`
+  maps specialization + experience + the trade's two questions to a real NSQF
+  qualification ladder (step 1/2/3, with safety gates), and
+  `careerMatch.ts` returns the PM-AJAY courses that train for those
+  qualifications and the jobs that fit the level, work mode and hours. Every
+  mapping and course carries a plain-language reason.
+- Without a profile it re-ranks the session's transcript match for the intent.
+- `404` if the session id is unknown. Without a profile, a session recorded
+  without a usable transcript returns empty `mappings`/`recommendations`.
 - Recommendations here carry no `recommendationId` (no new rows are written);
   the ids from the original `/converse` response remain the ones to report
   status against.

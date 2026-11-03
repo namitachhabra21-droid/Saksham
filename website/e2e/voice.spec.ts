@@ -5,7 +5,7 @@ test.skip(!process.env.VOICE_E2E, 'Set VOICE_E2E=1 and run the local speech setu
 const appUrl = process.env.BASE_URL ?? 'http://localhost:8081';
 for (const language of ['en', 'hi', 'hinglish-roman'] as const) {
   test.describe(`real ${language} audio`, () => {
-    test('microphone → actual recorded audio → local Whisper → editable review → confirmed skill survey', async () => {
+    test('microphone → actual recorded audio → server speech recognition → editable review → confirmed skill survey', async () => {
       test.setTimeout(120_000);
       const browser = await chromium.launch({ args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', `--use-file-for-fake-audio-capture=${resolve('../artifacts/voice', `teacher-${language}.wav`)}%noloop`] });
       const context = await browser.newContext();
@@ -32,7 +32,8 @@ for (const language of ['en', 'hi', 'hinglish-roman'] as const) {
       const response = await result;
       expect(response.status()).toBe(200);
       const data = await response.json();
-      expect(data.stt.provider).toBe('local-whisper');
+      // local Whisper when installed and enabled; otherwise the configured provider (LOCAL_STT_ENABLED=false → Sarvam)
+      expect(['local-whisper', 'sarvam', 'groq']).toContain(data.stt.provider);
       expect(data.transcript.trim().length).toBeGreaterThan(15);
       if (language === 'en') expect(data.transcript).toMatch(/teach|mathematic|class/i);
       const transcript = page.getByRole('textbox');

@@ -17,7 +17,7 @@
     "seed": "tsx prisma/seed.ts",
     "scrape:nsqf-details": "tsx scripts/scrape-nsqf-details.ts",
     "apply:nsqf-details": "tsx scripts/apply-nsqf-details.ts",
-    "test:career": "node --import tsx --test tests/career.test.ts",
+    "test:career": "node --import tsx --test tests/career.test.ts tests/careerQualifications.test.ts",
     "seed:career-demo": "tsx scripts/seed-career-demo.ts",
     "test:career-workflow": "tsx tests/career-workflow.ts",
     "speech:setup": "bash scripts/setup-speech.sh",

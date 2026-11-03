@@ -94,7 +94,11 @@
                 "hi": "वाणिज्य"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "Used to show tutoring roles for your subject only.",
+            "hi": "इससे केवल आपके विषय की ट्यूशन नौकरियाँ दिखाई जाती हैं।"
+          }
         },
         {
           "id": "credential",
@@ -138,7 +142,11 @@
                 "hi": "बी.एड + CTET / राज्य TET"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "School jobs need teacher education such as B.Ed or TET; tutoring does not.",
+            "hi": "स्कूल की नौकरी के लिए B.Ed या TET जैसी शिक्षक योग्यता चाहिए; ट्यूशन के लिए नहीं।"
+          }
         },
         {
           "id": "setting",
@@ -182,7 +190,11 @@
                 "hi": "ऑनलाइन"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "Where you have taught decides which practice we suggest first.",
+            "hi": "आपने कहाँ पढ़ाया है, उससे तय होता है कि पहले कौन सा अभ्यास सुझाया जाए।"
+          }
         }
       ]
     },
@@ -199,28 +211,32 @@
           "label": {
             "en": "Repairs and alterations",
             "hi": "मरम्मत और कपड़ों की फिटिंग"
-          }
+          },
+          "pattern": "alter|repair|fitting|फिटिंग|मरम्मत|ऑल्टर|रिपेयर"
         },
         {
           "id": "womenswear",
           "label": {
             "en": "Blouses, suits and womenswear",
             "hi": "ब्लाउज़, सूट और महिलाओं के कपड़े"
-          }
+          },
+          "pattern": "blouse|suit|kurti|salwar|lehenga|ladies|women|ब्लाउज|सूट|कुर्ती|सलवार|लहंगा|महिला"
         },
         {
           "id": "industrial",
           "label": {
             "en": "Industrial machine sewing",
             "hi": "औद्योगिक मशीन पर सिलाई"
-          }
+          },
+          "pattern": "factory|industrial|फैक्ट्री|फ़ैक्टरी|कारखान|औद्योगिक"
         },
         {
           "id": "embroidery",
           "label": {
             "en": "Embroidery and finishing",
             "hi": "कढ़ाई और फिनिशिंग"
-          }
+          },
+          "pattern": "embroid|aari|zari|कढ़ाई|कढाई|आरी|ज़री|जरी"
         }
       ],
       "questions": [
@@ -252,7 +268,11 @@
                 "hi": "औद्योगिक / ओवरलॉक मशीन"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "Machine-operator qualifications need practice on industrial machines. This and your strongest skill decide your NSQF level.",
+            "hi": "मशीन ऑपरेटर की योग्यता के लिए औद्योगिक मशीन का अभ्यास चाहिए। यह और आपका सबसे अच्छा हुनर आपका NSQF स्तर तय करते हैं।"
+          }
         },
         {
           "id": "technique",
@@ -282,7 +302,11 @@
                 "hi": "पैटर्न बनाना और डिज़ाइन"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "Cutting and pattern-making move you up to level 4 qualifications such as Sampling Tailor and Pattern Master.",
+            "hi": "कटिंग और पैटर्न बनाना आपको स्तर 4 की योग्यता (सैंपलिंग टेलर, पैटर्न मास्टर) तक ले जाता है।"
+          }
         }
       ]
     },
@@ -299,28 +323,32 @@
           "label": {
             "en": "Hair cutting and styling",
             "hi": "बाल काटना और स्टाइलिंग"
-          }
+          },
+          "pattern": "hair|baal|barber|बाल|नाई|हेयर"
         },
         {
           "id": "skin",
           "label": {
             "en": "Skin care and facials",
             "hi": "त्वचा की देखभाल और फेशियल"
-          }
+          },
+          "pattern": "facial|skin|फेशियल|फ़ेशियल|त्वचा|स्किन"
         },
         {
           "id": "bridal",
           "label": {
             "en": "Bridal makeup",
             "hi": "दुल्हन का मेकअप"
-          }
+          },
+          "pattern": "bridal|makeup|make up|dulhan|मेकअप|दुल्हन|ब्राइडल"
         },
         {
           "id": "general",
           "label": {
             "en": "General salon services",
             "hi": "सामान्य सैलून सेवाएँ"
-          }
+          },
+          "pattern": "parlou?r|salon|पार्लर|सैलून"
         }
       ],
       "questions": [
@@ -352,7 +380,11 @@
                 "hi": "प्रमाणित ब्यूटी प्रशिक्षण"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "Hygiene and client-safety training is required before the advanced beauty qualifications.",
+            "hi": "ऊँचे स्तर की ब्यूटी योग्यता से पहले स्वच्छता और ग्राहक-सुरक्षा का प्रशिक्षण ज़रूरी है।"
+          }
         },
         {
           "id": "equipment",
@@ -382,7 +414,11 @@
                 "hi": "पेशेवर किट / सैलून"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "Your own kit means you can take home-visit and freelance work sooner. It also counts towards your level.",
+            "hi": "अपनी किट होने से आप जल्दी घर जाकर या फ़्रीलांस काम ले सकते हैं। इससे आपका स्तर भी तय होता है।"
+          }
         }
       ]
     },
@@ -399,28 +435,32 @@
           "label": {
             "en": "Domestic wiring",
             "hi": "घरेलू वायरिंग"
-          }
+          },
+          "pattern": "house|home|ghar|wiring|घर|वायरिंग"
         },
         {
           "id": "maintenance",
           "label": {
             "en": "Electrical maintenance",
             "hi": "बिजली के उपकरणों का रखरखाव"
-          }
+          },
+          "pattern": "maintenance|मेंटेनेंस|रखरखाव"
         },
         {
           "id": "solar",
           "label": {
             "en": "Solar installation",
             "hi": "सोलर इंस्टॉलेशन"
-          }
+          },
+          "pattern": "solar|सोलर"
         },
         {
           "id": "industrial",
           "label": {
             "en": "Industrial electrical work",
             "hi": "औद्योगिक बिजली का काम"
-          }
+          },
+          "pattern": "factory|industrial|फैक्ट्री|फ़ैक्टरी|कारखान|औद्योगिक"
         }
       ],
       "questions": [
@@ -452,7 +492,11 @@
                 "hi": "आईटीआई / डिप्लोमा"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "An ITI course or apprenticeship lets you aim for level 4–5 electrician qualifications.",
+            "hi": "ITI या अप्रेंटिसशिप होने पर आप स्तर 4–5 की इलेक्ट्रीशियन योग्यता का लक्ष्य रख सकते हैं।"
+          }
         },
         {
           "id": "safety",
@@ -482,7 +526,11 @@
                 "hi": "टेस्टिंग और सुरक्षित आइसोलेशन में प्रशिक्षित"
               }
             }
-          ]
+          ],
+          "help": {
+            "en": "For your safety, higher electrical qualifications are suggested only after safety training.",
+            "hi": "आपकी सुरक्षा के लिए ऊँचे स्तर की बिजली की योग्यता सुरक्षा प्रशिक्षण के बाद ही सुझाई जाती है।"
+          }
         }
       ]
     }
@@ -523,7 +571,11 @@
             "hi": "3 साल से अधिक"
           }
         }
-      ]
+      ],
+      "help": {
+        "en": "This decides which NSQF level you start at: beginners start with a foundation qualification, experienced workers can aim higher or get certified for what they already know.",
+        "hi": "इससे तय होता है कि आप किस NSQF स्तर से शुरू करेंगे: नए लोग बुनियादी योग्यता से, अनुभवी लोग ऊँचे स्तर से या अपने हुनर का प्रमाणपत्र लेकर।"
+      }
     },
     {
       "id": "mode",
@@ -560,7 +612,11 @@
             "hi": "यात्रा / स्थान बदल सकते हैं"
           }
         }
-      ]
+      ],
+      "help": {
+        "en": "Jobs are matched to how you want to work: near home, from home, online, or by moving.",
+        "hi": "नौकरियाँ आपके काम करने के तरीके से मिलाई जाती हैं: घर के पास, घर से, ऑनलाइन या दूसरी जगह जाकर।"
+      }
     },
     {
       "id": "availability",
@@ -590,7 +646,11 @@
             "hi": "पूरा समय"
           }
         }
-      ]
+      ],
+      "help": {
+        "en": "Used to estimate how many weeks the training will take, and to match full-time or part-time work.",
+        "hi": "इससे अंदाज़ा लगता है कि प्रशिक्षण कितने हफ़्ते चलेगा, और पूरे समय या कुछ घंटों का काम मिलाया जाता है।"
+      }
     },
     {
       "id": "digital",
@@ -620,7 +680,11 @@
             "hi": "कंप्यूटर और इंटरनेट"
           }
         }
-      ]
+      ],
+      "help": {
+        "en": "Tells us whether online classes and phone applications will work for you.",
+        "hi": "इससे पता चलता है कि ऑनलाइन क्लास और फ़ोन से आवेदन आपके लिए ठीक रहेंगे या नहीं।"
+      }
     }
   ]
 }

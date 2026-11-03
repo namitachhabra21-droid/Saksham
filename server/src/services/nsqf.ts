@@ -50,7 +50,14 @@ export interface MappingResult {
   sector: string | null;
   nsqfLevel: number | null;
   confidence: number;
-  method: "keyword" | "embedding" | "llm" | "manual";
+  /** "profile": chosen from the survey answers by services/careerQualifications.ts */
+  method: "keyword" | "embedding" | "llm" | "manual" | "profile";
+  /** Survey-profile mappings only: how this qualification relates to the
+   *  person today, why it was chosen (localized), and the training effort. */
+  fit?: "recommended" | "alternative" | "next";
+  reason?: string;
+  trainingHours?: number;
+  trainingWeeks?: number;
   /** true if this normalizedSkill also has a real, currently PM-AJAY-funded
    *  course (prisma/data/README-pmajay-courses.md) — independent of, and not
    *  required for, the NSQF match above. */

@@ -102,6 +102,13 @@ export interface NsqfMapping {
   /** Real job titles this qualification leads to (NQR "proposed occupations").
    *  The catalogue holds no vacancies, so this is what "find work" answers with. */
   proposedOccupations?: string[];
+  /** Survey-profile mappings (method "profile") only: how this qualification
+   *  fits the person today, why it was chosen, and the training effort. */
+  fit?: 'recommended' | 'alternative' | 'next';
+  reason?: string;
+  titleHi?: string;
+  trainingHours?: number;
+  trainingWeeks?: number;
 }
 
 /** A job vacancy matched to the beneficiary's spoken skill.
@@ -354,12 +361,13 @@ export async function reprioritise(
   location?: { state?: string | null; district?: string | null },
   skillDetails?: string,
   profile?: CareerProfile,
+  language?: LanguageCode,
 ): Promise<{ plan?: CareerPlan; mappings: NsqfMapping[]; recommendations: CourseRecommendation[]; jobs?: JobMatch[] } | null> {
   try {
     const res = await fetch(`${API_BASE}/api/assistant/reprioritise`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, intent, state: location?.state, district: location?.district, skillDetails, profile }),
+      body: JSON.stringify({ sessionId, intent, state: location?.state, district: location?.district, skillDetails, profile, language: language === 'hi' || language === 'en' ? language : undefined }),
     });
     if (!res.ok) return null;
     return await res.json();

@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import catalog from './career-catalog.json';
+import { decideStep, isFocusProfession, pickQualifications, FOCUS_PROFESSIONS } from './careerQualifications.js';
 
 export { catalog as careerCatalog };
+/** What the survey offers: only the focus trades, each with an NSQF ladder.
+ *  Teaching stays valid in the schema (tests, saved profiles) but is not offered,
+ *  because NQR has no school-teacher qualification to map it to. */
+export const surveyCatalog = { ...catalog, professions: catalog.professions.filter(p => (FOCUS_PROFESSIONS as readonly string[]).includes(p.id)) };
 export const careerProfileSchema = z.object({
   profession: z.enum(['teaching', 'tailoring', 'beauty', 'electrical']),
   specialization: z.string().max(50),
@@ -34,7 +39,7 @@ const roles: Record<string, Record<string, [string, string]>> = {
     secondary: ['Secondary Tutor', 'माध्यमिक ट्यूटर'], senior: ['Senior Secondary Tutor', 'उच्च माध्यमिक ट्यूटर'], exam: ['Exam Preparation Tutor', 'प्रतियोगी परीक्षा ट्यूटर'],
   },
   tailoring: { alterations: ['Alteration Tailor', 'कपड़ों की फिटिंग के दर्जी'], womenswear: ['Womenswear Tailor', 'महिलाओं के कपड़ों के दर्जी'], industrial: ['Sewing Machine Operator', 'सिलाई मशीन ऑपरेटर'], embroidery: ['Embroidery Artisan', 'कढ़ाई कारीगर'] },
-  beauty: { hair: ['Hair Stylist', 'हेयर स्टाइलिस्ट'], skin: ['Beauty Therapist', 'ब्यूटी थेरेपिस्ट'], bridal: ['Bridal Makeup Artist', 'ब्राइडल मेकअप आर्टिस्ट'], general: ['Salon Assistant', 'सैलून सहायक'] },
+  beauty: { hair: ['Hair Stylist', 'हेयर स्टाइलिस्ट'], skin: ['Beauty Therapist', 'ब्यूटी थेरेपिस्ट'], bridal: ['Bridal Makeup Artist', 'ब्राइडल मेकअप आर्टिस्ट'], general: ['Beauty Parlour Worker', 'ब्यूटी पार्लर कर्मी'] },
   electrical: { domestic: ['Domestic Electrician', 'घरेलू इलेक्ट्रीशियन'], maintenance: ['Electrical Maintenance Technician', 'विद्युत रखरखाव तकनीशियन'], solar: ['Solar Installation Technician', 'सोलर इंस्टॉलेशन तकनीशियन'], industrial: ['Industrial Electrician', 'औद्योगिक इलेक्ट्रीशियन'] },
 };
 
@@ -83,9 +88,19 @@ export function buildCareerPlan(profile: CareerProfile, intent: CareerIntent, la
   const time = catalog.common.find(q => q.id === 'availability')!.options.find(o => o.id === a.availability)!.label[hi ? 'hi' : 'en'];
   const experience = catalog.common.find(q => q.id === 'experience')!.options.find(o => o.id === a.experience)!.label[hi ? 'hi' : 'en'];
   const summary = text(`${roleTitle} • ${experience} • ${mode} • ${time} • ${profile.district}, ${profile.state}`, `${roleTitle} • ${experience} • ${mode} • ${time} • ${profile.district}, ${profile.state}`);
+  const qualifications = pickQualifications(profile, language, catalog);
+  const best = qualifications.find(x => x.fit === 'recommended');
+  const next = qualifications.find(x => x.fit === 'next');
+  const qName = (x: { title: string; titleHi: string; level: number }) => `${hi ? x.titleHi : x.title} (NSQF ${x.level})`;
+  const stepWords = isFocusProfession(profile.profession) ? (hi ? ['शुरुआती', 'कामकाजी', 'उन्नत'] : ['starting', 'working', 'advanced'])[decideStep(profile).step] : '';
   const documents = profile.profession === 'teaching'
     ? text('Prepare education certificates, teaching credentials (if held), experience references and a demo lesson.', 'शिक्षा प्रमाणपत्र, शिक्षण योग्यता (यदि है), अनुभव के संदर्भ और डेमो पाठ तैयार करें।')
     : text('Prepare a short work profile, training certificates (if held), references and photos of your work.', 'छोटा कार्य परिचय, प्रशिक्षण प्रमाणपत्र (यदि है), संदर्भ और काम की फ़ोटो तैयार करें।');
+  const qualificationStep = best ? (intent === 'jobs'
+    ? { title: text('Your level today', 'आज आपका स्तर'), detail: text(`${qName(best)}. Jobs at this level are listed first.${next ? ` Jobs marked “reachable with training” need ${qName(next)}.` : ''}`, `${qName(best)}। इस स्तर की नौकरियाँ पहले दिखाई गई हैं।${next ? ` “प्रशिक्षण से संभव” वाली नौकरियों के लिए ${qName(next)} चाहिए।` : ''}`) }
+    : intent === 'certificate'
+      ? { title: text('Qualification to get certified in', 'किस योग्यता का प्रमाणपत्र लें'), detail: text(`${qName(best)} through Recognition of Prior Learning (RPL): an assessment of the work you already do.${next ? ` Later: ${qName(next)}.` : ''}`, `${qName(best)} — पूर्व कौशल की मान्यता (RPL) से, यानी आप जो काम पहले से करते हैं उसका मूल्यांकन।${next ? ` बाद में: ${qName(next)}।` : ''}`) }
+      : { title: text('Recommended NSQF course', 'सुझाई गई NSQF योग्यता'), detail: text(`${qName(best)}: about ${best.hours} hours (≈ ${best.weeks} weeks at your hours).${next ? ` After that: ${qName(next)}.` : ''}`, `${qName(best)}: लगभग ${best.hours} घंटे (आपके समय के अनुसार ≈ ${best.weeks} हफ़्ते)।${next ? ` उसके बाद: ${qName(next)}।` : ''}`) }) : null;
   const steps = intent === 'jobs' ? [
     { title: text('1. Prepare your application', '1. आवेदन की तैयारी'), detail: documents },
     { title: text('2. Address requirements', '2. ज़रूरी शर्तें पूरी करें'), detail: gaps.join(' ') || text('Check each vacancy’s experience, qualification and schedule requirements.', 'हर नौकरी की अनुभव, योग्यता और समय की शर्तें जाँचें।') },
@@ -100,7 +115,17 @@ export function buildCareerPlan(profile: CareerProfile, intent: CareerIntent, la
     { title: text('2. Choose a suitable batch', '2. सही बैच चुनें'), detail: text(`${mode}; ${time}. Check fees, equipment, teaching language and batch timing with the centre.`, `${mode}; ${time}। केंद्र से शुल्क, उपकरण, पढ़ाने की भाषा और बैच का समय पूछें।`) },
     { title: text('3. Enrol and practise', '3. दाखिला लें और अभ्यास करें'), detail: text('Use the official training portal to find a provider. Confirm eligibility and availability; save your enrolment receipt and build a practice portfolio.', 'आधिकारिक प्रशिक्षण पोर्टल पर केंद्र खोजें। पात्रता और सीटों की पुष्टि करें; दाखिले की रसीद सुरक्षित रखें और अभ्यास का पोर्टफोलियो बनाएँ।') },
   ];
-  return { intent, profile, roleTitle, searchTitle, summary, ready, gaps, modules, steps,
+  if (qualificationStep) steps.unshift(qualificationStep);
+  steps.forEach((s, i) => { s.title = s.title.replace(/^\d+\.\s*/, `${i + 1}. `); if (!/^\d+\./.test(s.title)) s.title = `${i + 1}. ${s.title}`; });
+  const goal = intent === 'jobs' ? text('Below are jobs that match your level and way of working.', 'नीचे आपके स्तर और काम के तरीके से मिलती नौकरियाँ हैं।')
+    : intent === 'certificate' ? text('Below are courses and assessment options to certify your skill.', 'नीचे आपके हुनर का प्रमाणपत्र पाने के कोर्स और मूल्यांकन विकल्प हैं।')
+      : text('Below are PM-AJAY courses matched to this qualification.', 'नीचे इस योग्यता से मिलते PM-AJAY कोर्स हैं।');
+  const spoken = best
+    ? text(`Based on your answers, your work is ${roleTitle}, at the ${stepWords} step. The best NSQF qualification for you is ${best.title}, level ${best.level}. ${next ? `Your next step is ${next.title}. ` : ''}${goal}`,
+      `आपके जवाबों के अनुसार आप ${roleTitle} हैं, ${stepWords} स्तर पर। आपके लिए सबसे सही NSQF योग्यता है ${best.titleHi}, स्तर ${best.level}। ${next ? `आपका अगला कदम है ${next.titleHi}। ` : ''}${goal}`)
+    : [summary, ...steps.map(s => `${s.title}. ${s.detail}`)].join('. ');
+  return { intent, profile, roleTitle, searchTitle, summary, ready, gaps, modules, steps, spoken,
+    qualifications: qualifications.map(({ course: _course, ...pick }) => pick),
     action: intent === 'jobs'
       ? { label: text('Open National Career Service', 'National Career Service खोलें'), url: 'https://www.ncs.gov.in/' }
       : { label: text('Find training / assessment centres', 'प्रशिक्षण / मूल्यांकन केंद्र खोजें'), url: 'https://www.skillindiadigital.gov.in/' },

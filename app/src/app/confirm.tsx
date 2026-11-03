@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-import { getCareerProfile, getCareerPlan } from '@/lib/career';
+import { getCareerProfile, getCareerPlan, getCareerSummary, type CareerPlan } from '@/lib/career';
 import { reprioritise } from '@/lib/api';
 import { UI_STRINGS } from '@/constants/languages';
 import { resolveDeviceLocation } from '@/lib/location';
@@ -35,9 +35,14 @@ export default function ConfirmScreen() {
     .filter((m) => m.title)
     .filter((m, i, arr) => arr.findIndex((x) => x.qpCode === m.qpCode) === i);
   const skillLabel = known.map((m) => m.title).join(', ');
-  const confirmation = skillLabel
-    ? t.confirmUnderstood.replace('{skill}', skillLabel)
-    : t.noMatch;
+  // After the survey, confirm the profile they built rather than the rough
+  // keyword match from the first sentence.
+  const profileSummary = getCareerSummary(displayResult?.sessionId);
+  const confirmation = profileSummary
+    ? (language === 'hi' ? `आपका कार्य परिचय तैयार है: ${profileSummary}।` : `Your work profile is ready: ${profileSummary}.`)
+    : skillLabel
+      ? t.confirmUnderstood.replace('{skill}', skillLabel)
+      : t.noMatch;
 
   useEffect(() => {
     const details = getSkillDetails();
@@ -80,11 +85,11 @@ export default function ConfirmScreen() {
   async function choose(intent: Intent) {
     if (busy) return;
     const profile = getCareerProfile(displayResult?.sessionId);
+    stopSpeaking();
     if (!profile && (language === 'hi' || language === 'en')) { router.push('/survey'); return; }
     setIntent(intent);
     setBusy(intent);
     setError(null);
-    stopSpeaking();
     // Prepare the roadmap independently so a catalogue outage can show the
     // personalized next steps without falling back to stale generic results.
     const current = getLastResult();
@@ -98,7 +103,7 @@ export default function ConfirmScreen() {
         await setLocation(effectiveState, effectiveDistrict);
       }
     }
-    let plan;
+    let plan: CareerPlan | undefined;
     if (profile) {
       try { plan = await getCareerPlan(profile, intent, language!); }
       catch { setBusy(null); setError(language === "hi" ? "योजना नहीं बन पाई। API का कनेक्शन जाँचें और फिर कोशिश करें।" : "Could not prepare your plan. Check the API connection and try again."); return; }
@@ -107,19 +112,28 @@ export default function ConfirmScreen() {
       const ranked = await reprioritise(current.sessionId, intent, {
         state: effectiveState,
         district: effectiveDistrict,
-      }, getSkillDetails(), profile ?? undefined);
+      }, getSkillDetails(), profile ?? undefined, language ?? undefined);
+      const hi = language === 'hi';
+      /** The spoken result: the plan's own summary plus what was found. */
+      const spokenFor = (p: CareerPlan, jobs: number, courses: number) => {
+        const found = intent === 'jobs'
+          ? (jobs ? (hi ? `आपके लिए ${jobs} नौकरियाँ मिलीं।` : `${jobs} matching jobs were found.`) : (hi ? 'अभी कोई मिलती नौकरी नहीं मिली; नीचे आधिकारिक पोर्टल देखें।' : 'No matching job was found right now; see the official portal below.'))
+          : (courses ? (hi ? `${courses} कोर्स मिले।` : `${courses} matching courses were found.`) : (hi ? 'अभी कोई मिलता कोर्स नहीं मिला; नीचे प्रशिक्षण पोर्टल देखें।' : 'No matching course was found right now; see the training portal below.'));
+        return `${p.spoken ?? [p.summary, ...p.steps.map(s => `${s.title}. ${s.detail}`)].join('. ')} ${found}`;
+      };
       if (ranked) {
+        const finalPlan = ranked.plan ?? plan;
         setLastResult({
           ...current,
           mappings: ranked.mappings,
           recommendations: ranked.recommendations,
           jobs: ranked.jobs ?? [],
-          plan: ranked.plan ?? plan,
+          plan: finalPlan,
           personalizationNotice: undefined,
-          reply: plan ? { ...current.reply, text: [plan.summary, ...plan.steps.map(s => `${s.title}. ${s.detail}`)].join(". ") } : current.reply,
+          reply: finalPlan ? { ...current.reply, text: spokenFor(finalPlan, ranked.jobs?.length ?? 0, ranked.recommendations.length) } : current.reply,
         });
       } else if (plan) {
-        setLastResult({ ...current, recommendations: [], jobs: [], plan, personalizationNotice: language === "hi" ? "कैटलॉग अभी उपलब्ध नहीं है। आपकी व्यक्तिगत योजना तैयार है; नीचे आधिकारिक पोर्टल पर खोजें।" : "The catalogue is currently unavailable. Your personalized plan is ready; search on the official portal below.", reply: { ...current.reply, text: [plan.summary, ...plan.steps.map(s => `${s.title}. ${s.detail}`)].join(". ") } });
+        setLastResult({ ...current, recommendations: [], jobs: [], plan, personalizationNotice: hi ? "कैटलॉग अभी उपलब्ध नहीं है। आपकी व्यक्तिगत योजना तैयार है; नीचे आधिकारिक पोर्टल पर खोजें।" : "The catalogue is currently unavailable. Your personalized plan is ready; search on the official portal below.", reply: { ...current.reply, text: spokenFor(plan, 0, 0) } });
       }
     }
     setBusy(null);
@@ -179,7 +193,7 @@ export default function ConfirmScreen() {
           </View>
         </Animated.View>
 
-        {getCareerProfile(displayResult.sessionId) && <Card><Txt variant="body">{language === 'hi' ? 'आपका विस्तृत कार्य परिचय तैयार है। अपना लक्ष्य चुनें।' : 'Your detailed work profile is ready. Choose your goal.'}</Txt><Pressable onPress={() => router.push('/survey')}><Txt tone="primary">{language === 'hi' ? 'उत्तर बदलें' : 'Edit answers'}</Txt></Pressable></Card>}
+        {getCareerProfile(displayResult.sessionId) && <Card><Txt variant="body">{language === 'hi' ? 'आपका विस्तृत कार्य परिचय तैयार है। अपना लक्ष्य चुनें।' : 'Your detailed work profile is ready. Choose your goal.'}</Txt><Pressable onPress={() => { stopSpeaking(); router.push('/survey'); }}><Txt tone="primary">{language === 'hi' ? 'उत्तर बदलें' : 'Edit answers'}</Txt></Pressable></Card>}
         {error && <Txt accessibilityRole="alert" tone="dim">{error}</Txt>}
         {/* options */}
         <Animated.View entering={FadeInDown.delay(300).duration(350)} style={{ marginTop: 8 }}>

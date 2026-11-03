@@ -49,6 +49,7 @@ export default function ResultsScreen() {
     // this person back, and a guest session carries no name or number. Send
     // them to sign in and bring them straight back here.
     if (!token) {
+      stopSpeaking();
       if (Platform.OS === 'web') { router.push('/auth?returnTo=/results'); return; }
       Alert.alert(t.loginToApply, t.loginToApplyBody, [
         { text: t.cancel, style: 'cancel' },
@@ -161,14 +162,20 @@ export default function ResultsScreen() {
           {intent === 'jobs' && <Button label={language === 'hi' ? 'सक्षम में नौकरियाँ देखें' : 'View matching jobs in Saksham'} icon="briefcase-outline" onPress={() => scrollRef.current?.scrollTo({ y: jobsOffset, animated: true })} />}
           {intent === 'jobs' && <Txt variant="caption" tone="dim">{language === 'hi' ? 'नीचे सक्षम के जॉब कार्ड हैं। NCS एक वैकल्पिक बाहरी वेबसाइट है; उसे खोलने से आवेदन जमा नहीं होता।' : 'Saksham job cards appear below. NCS is an optional external website; opening it does not submit an application.'}</Txt>}
           <Button label={intent === 'jobs' ? (language === 'hi' ? 'वैकल्पिक: NCS पर खोजें (बाहरी)' : 'Optional: search NCS (external)') : result.plan.action.label} variant={intent === 'jobs' ? 'secondary' : 'primary'} icon="open-outline" onPress={() => Linking.openURL(result.plan!.action.url).catch(() => Alert.alert(t.tryAgain))} />
-          <Button variant="secondary" size="md" label={language === 'hi' ? 'अपने उत्तर या लक्ष्य बदलें' : 'Change your answers or goal'} onPress={() => router.push('/survey')} />
+          <Button variant="secondary" size="md" label={language === 'hi' ? 'अपने उत्तर या लक्ष्य बदलें' : 'Change your answers or goal'} onPress={() => { stopSpeaking(); router.push('/survey'); }} />
         </Card>}
 
-        {intent === 'jobs' && <Button label={language === 'hi' ? 'मेरे आवेदन और स्थिति देखें' : 'View my applications and status'} variant="secondary" onPress={() => router.push('/applications')} />}
+        {intent === 'jobs' && <Button label={language === 'hi' ? 'मेरे आवेदन और स्थिति देखें' : 'View my applications and status'} variant="secondary" onPress={() => { stopSpeaking(); router.push('/applications'); }} />}
         {/* nsqf */}
+        {known.some((m) => m.fit) && (
+          <View style={styles.sectionHead}>
+            <Ionicons name="layers" size={18} color={c.primary} />
+            <Txt variant="h2">{language === 'hi' ? 'आपके लिए NSQF योग्यताएँ' : 'NSQF qualifications for you'}</Txt>
+          </View>
+        )}
         {known.length > 0 ? (
           known.map((m, i) => (
-            <NsqfCard key={m.qpCode} m={m} label={t.nsqfMatch} matchLabel={t.matchLabel} index={i + 1} best={i === 0} />
+            <NsqfCard key={m.qpCode} m={m} label={t.nsqfMatch} matchLabel={t.matchLabel} index={i + 1} best={i === 0} hindi={language === 'hi'} />
           ))
         ) : (
           <Card index={1} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -303,38 +310,57 @@ function Pager({ total, page, onPage }: { total: number; page: number; onPage: (
   );
 }
 
+const FIT_LABEL = {
+  recommended: { en: 'Best fit for you today', hi: 'आज आपके लिए सबसे सही' },
+  alternative: { en: 'Same-level option', hi: 'इसी स्तर का विकल्प' },
+  next: { en: 'Your next step', hi: 'आपका अगला कदम' },
+} as const;
+
 function NsqfCard({
   m,
   label,
   matchLabel,
   index,
   best,
+  hindi,
 }: {
   m: NsqfMapping;
   label: string;
   matchLabel: string;
   index: number;
   best?: boolean;
+  hindi?: boolean;
 }) {
+  const { c, radius } = useTheme();
+  const fit = m.fit ? FIT_LABEL[m.fit][hindi ? 'hi' : 'en'] : null;
   return (
-    <Card index={index} tint={best ? 'primary' : undefined}>
+    <Card index={index} tint={m.fit ? (m.fit === 'recommended' ? 'primary' : undefined) : best ? 'primary' : undefined} style={{ gap: 10 }}>
       <View style={styles.sectionHead}>
         <Txt variant="overline" tone="faint" style={{ flex: 1 }}>
-          {label}
+          {fit ?? label}
         </Txt>
-        {best && <Chip label="Best match" tone="primary" icon="star" />}
+        {(m.fit ? m.fit === 'recommended' : best) && <Chip label={hindi ? 'सबसे सही' : 'Best match'} tone="primary" icon="star" />}
+        {m.fit === 'next' && <Chip label={hindi ? 'अगला कदम' : 'Next step'} tone="accent" icon="trending-up" />}
       </View>
       <View style={styles.nsqfRow}>
         <View style={{ flex: 1, gap: 8 }}>
-          <Txt variant="h2">{m.title}</Txt>
+          <Txt variant="h2">{hindi && m.titleHi ? m.titleHi : m.title}</Txt>
+          {hindi && m.titleHi && <Txt variant="caption" tone="faint">{m.title}</Txt>}
           <View style={styles.chipRow}>
-            {m.qpCode && <Chip label={m.qpCode} tone="primary" icon="pricetag" />}
-            {m.sector && <Chip label={m.sector} />}
             {m.nsqfLevel != null && <Chip label={`NSQF ${m.nsqfLevel}`} tone="accent" icon="layers" />}
+            {m.trainingHours != null && <Chip label={hindi ? `${m.trainingHours} घंटे` : `${m.trainingHours} hours`} icon="time-outline" />}
+            {m.sector && <Chip label={m.sector} />}
+            {m.qpCode && <Chip label={m.qpCode} tone="primary" icon="pricetag" />}
           </View>
         </View>
-        <Meter value={m.confidence} label={matchLabel} />
+        {!m.fit && <Meter value={m.confidence} label={matchLabel} />}
       </View>
+      {!!m.reason && (
+        <View style={[styles.why, { backgroundColor: c.surfaceAlt, borderRadius: radius.md }]}>
+          <Ionicons name="bulb-outline" size={14} color={c.accent} />
+          <Txt variant="body" tone="dim" style={{ flex: 1 }}>{m.reason}</Txt>
+        </View>
+      )}
     </Card>
   );
 }
@@ -403,7 +429,7 @@ function JobCard({
         <View style={[styles.why, { backgroundColor: c.surfaceAlt, borderRadius: radius.md }]}>
           <Ionicons name="school-outline" size={14} color={c.accent} />
           <Txt variant="caption" tone="dim" style={{ flex: 1 }}>
-            {t.jobNeedsTraining}
+            {t.jobNeedsTraining}{j.nsqfTitle ? ` — ${j.nsqfTitle}` : ''}
           </Txt>
         </View>
       )}
