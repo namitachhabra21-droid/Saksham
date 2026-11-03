@@ -37,6 +37,10 @@ export interface CareerPlan {
   modules: string[];
   steps: { title: string; detail: string }[];
   action: { label: string; url: string };
+  /** why this portal: what it is and what to do there */
+  actionNote?: string;
+  /** training/certificate: the official PM-AJAY course list */
+  secondaryAction?: { label: string; url: string };
   searchHint: string;
   /** short narrative for the voice reply */
   spoken?: string;

@@ -19,12 +19,17 @@ const STATUS_STYLE: Record<JobApplicationRow["status"], string> = {
   REJECTED: "bg-danger/10 text-danger",
 };
 
+const EDUCATION_LABEL: Record<string, string> = {
+  below_10th: "below 10th", "10th": "10th pass", "12th": "12th pass", iti_diploma: "ITI / diploma",
+  undergrad_ongoing: "in college", undergrad: "graduate", postgrad: "postgraduate",
+};
+
 /** Everything staff need to act on an application without leaving the row. */
 function ProfileLine({ a }: { a: JobApplicationRow }) {
   const bits = [
     a.user.age ? `${a.user.age} yrs` : null,
     a.user.gender,
-    a.user.education,
+    a.user.education ? EDUCATION_LABEL[a.user.education] ?? a.user.education : null,
     a.user.experienceYears != null ? `${a.user.experienceYears} yrs experience` : null,
     a.user.workPreference === "home"
       ? "wants work near home"

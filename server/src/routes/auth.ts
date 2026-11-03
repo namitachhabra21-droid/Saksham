@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { signToken, authenticate } from "../middleware/auth.js";
 import { requestOtp, verifyOtp, type VerifyOtpResult } from "../services/otp.js";
+import { EDUCATION_LEVELS } from "../services/educationParse.js";
 
 export const authRouter = Router();
 
@@ -84,9 +85,7 @@ const profileSchema = z.object({
   name: z.string().min(1).max(80).optional(),
   gender: z.enum(["male", "female", "other"]).optional(),
   age: z.number().int().min(10).max(100).optional(),
-  education: z
-    .enum(["below_10th", "10th", "12th", "iti_diploma", "undergrad", "postgrad"])
-    .optional(),
+  education: z.enum(EDUCATION_LEVELS).optional(),
   experienceYears: z.number().int().min(0).max(70).optional(),
   experienceSkill: z.string().max(60).optional(),
   workPreference: z.enum(["home", "other"]).optional(),

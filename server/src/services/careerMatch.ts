@@ -17,11 +17,49 @@ import type { MappingResult } from './nsqf.js';
  * specialization, level, work mode and hours.
  */
 
-export type ProfileMapping = MappingResult & { titleHi?: string };
+export type ProfileMapping = MappingResult & {
+  titleHi?: string;
+  /** what this qualification means for the chosen goal, e.g. "Train for this next" (localized) */
+  goalLabel?: string;
+  /** the one qualification to act on for this goal */
+  primary?: boolean;
+};
 
 const CONFIDENCE = { recommended: 0.92, alternative: 0.8, next: 0.65 } as const;
 
-export async function profileMappings(profile: CareerProfile, language: string): Promise<{ picks: QualificationPick[]; mappings: ProfileMapping[] }> {
+/**
+ * The same qualifications mean different things per goal. For a job, the
+ * person's level today is what employers look for. For training, a beginner
+ * trains for that level first, but someone already working at it trains for
+ * the NEXT step (upskilling) — and can get their current level certified.
+ */
+export function isUpskilling(profile: CareerProfile, intent: CareerIntent, picks: QualificationPick[]): boolean {
+  return intent === 'training' && decideStep(profile).step >= 1 && picks.some(p => p.fit === 'next');
+}
+const GOAL_LABELS: Record<'jobs' | 'training' | 'upskill' | 'certificate', Record<QualificationPick['fit'], [string, string]>> = {
+  jobs: {
+    recommended: ['Your level today — employers look for this', 'आज आपका स्तर — नियोक्ता यही देखते हैं'],
+    alternative: ['Also matches your level', 'आपके स्तर से यह भी मेल खाता है'],
+    next: ['Reachable with training — for higher-paid jobs', 'प्रशिक्षण से संभव — ज़्यादा कमाई वाली नौकरियों के लिए'],
+  },
+  training: {
+    recommended: ['Train for this first', 'पहले इसका प्रशिक्षण लें'],
+    alternative: ['Or train for this (same level)', 'या इसका प्रशिक्षण (इसी स्तर का)'],
+    next: ['After that', 'उसके बाद'],
+  },
+  upskill: {
+    next: ['Train for this next — your upskilling goal', 'अब इसका प्रशिक्षण लें — आगे बढ़ने का लक्ष्य'],
+    recommended: ['Your current level — you can get this certified', 'आपका मौजूदा स्तर — इसका प्रमाणपत्र ले सकते हैं'],
+    alternative: ['Also at your current level', 'आपके मौजूदा स्तर का दूसरा विकल्प'],
+  },
+  certificate: {
+    recommended: ['Get certified in this (RPL assessment)', 'इसका प्रमाणपत्र लें (RPL मूल्यांकन)'],
+    alternative: ['Or get certified in this', 'या इसका प्रमाणपत्र लें'],
+    next: ['Later, after more training', 'बाद में, और प्रशिक्षण के बाद'],
+  },
+};
+
+export async function profileMappings(profile: CareerProfile, language: string, intent: CareerIntent = 'guidance'): Promise<{ picks: QualificationPick[]; mappings: ProfileMapping[] }> {
   const picks = pickQualifications(profile, language, careerCatalog);
   if (picks.length === 0) return { picks, mappings: [] };
   const trade = profile.profession as FocusProfession;
@@ -30,7 +68,11 @@ export async function profileMappings(profile: CareerProfile, language: string):
     prisma.pmajayCourse.findFirst({ where: { keywords: { hasSome: PROFESSION_TOKENS[trade] } }, select: { subCourseCode: true, subCourseName: true, sector: true } }),
   ]);
   const token = specializationToken(profile);
-  const mappings = picks.map((pick): ProfileMapping => {
+  const upskill = isUpskilling(profile, intent, picks);
+  const goal = upskill ? 'upskill' : intent === 'jobs' || intent === 'certificate' ? intent : 'training';
+  const primaryFit: QualificationPick['fit'] = upskill ? 'next' : 'recommended';
+  const ordered = upskill ? [...picks].sort((a, b) => Number(b.fit === 'next') - Number(a.fit === 'next')) : picks;
+  const mappings = ordered.map((pick): ProfileMapping => {
     const row = rows.find(r => r.qpCode === pick.qpCode);
     return {
       rawSkillText: `${profile.profession}/${profile.specialization}`,
@@ -51,6 +93,8 @@ export async function profileMappings(profile: CareerProfile, language: string):
       reason: pick.reason,
       trainingHours: pick.hours,
       trainingWeeks: pick.weeks,
+      goalLabel: GOAL_LABELS[goal][pick.fit][language === 'hi' ? 1 : 0],
+      primary: pick.fit === primaryFit,
     };
   });
   return { picks, mappings };
@@ -81,6 +125,8 @@ export async function recommendCoursesForProfile(input: {
     take: 500,
   });
   const recommended = picks.find(p => p.fit === 'recommended')!;
+  // upskilling: courses for the next step come first
+  const weights = isUpskilling(profile, intent, picks) ? { recommended: 0.4, alternative: 0.3, next: 0.55 } : COURSE_WEIGHTS[intent];
   const seen = new Set<string>();
   const scored = candidates.flatMap(course => {
     const name = course.subCourseName.trim();
@@ -92,7 +138,8 @@ export async function recommendCoursesForProfile(input: {
     const specific = specTerms?.test(name) ?? false;
     if (!pick && !specific) return [];
     const via = pick ?? recommended;
-    let score = (pick ? COURSE_WEIGHTS[intent][pick.fit] : 0) + (specific ? 0.25 : 0) + (locationRank === 2 ? 0.15 : 0.1);
+    // the goal decides the order among qualification courses; specialization words only lift the rest
+    let score = (pick ? weights[pick.fit] : 0) + (specific ? (pick ? 0.05 : 0.25) : 0) + (locationRank === 2 ? 0.15 : 0.1);
     score = Math.min(1, score);
     const rationale = pick?.fit === 'recommended'
       ? (hi ? `आपकी सुझाई गई योग्यता ${pick.titleHi} (NSQF ${pick.level}) के लिए प्रशिक्षण।` : `Trains for your recommended qualification: ${pick.title} (NSQF ${pick.level}).`)
@@ -118,15 +165,18 @@ export async function recommendCoursesForProfile(input: {
     .slice(0, limit)
     .map(s => s.recommendation);
   if (ranked.length >= 3) return ranked;
-  // Thin list: add courses for other qualifications in the same trade, labelled as related.
-  const tradeQps = Object.values(LADDERS[trade]).flat(2);
-  for (const course of candidates) {
+  // Thin list: add courses for other qualifications in the same trade, own specialization's ladder first.
+  const tradeQps = [LADDERS[trade][profile.specialization], ...Object.entries(LADDERS[trade]).filter(([s]) => s !== profile.specialization).map(([, l]) => l)].flat(2);
+  const available = candidates.filter(c => {
+    const name = c.subCourseName.trim();
+    const scoped = courseState(c.courseLevel);
+    return !OUT_OF_SCOPE.test(name) && !(scoped && !(myState && myState.includes(scoped)));
+  });
+  for (const related of tradeQps) {
     if (ranked.length >= 4) break;
+    const course = available.find(c => related.course.test(c.subCourseName.trim()) && !seen.has(c.subCourseName.trim().toLowerCase()));
+    if (!course) continue;
     const name = course.subCourseName.trim();
-    const scoped = courseState(course.courseLevel);
-    if (seen.has(name.toLowerCase()) || OUT_OF_SCOPE.test(name) || (scoped && !(myState && myState.includes(scoped)))) continue;
-    const related = tradeQps.find(qp => qp.course.test(name));
-    if (!related) continue;
     seen.add(name.toLowerCase());
     ranked.push({
       pmajayCourseId: course.id, subCourseCode: course.subCourseCode, subCourseName: name, courseName: course.courseName,

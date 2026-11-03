@@ -184,13 +184,25 @@ funnel still shows one session per spoken utterance.
     { "qpCode": "QG-04-AP-03282-2024-V2-AMHSSC", "title": "Pattern Master - Apparel", "titleHi": "पैटर्न मास्टर",
       "nsqfLevel": 4, "method": "profile", "fit": "recommended",   // recommended | alternative | next
       "reason": "Your answers (More than 3 years; ...) put you at the advanced step. NSQF level 4: about 420 hours ...",
-      "trainingHours": 420, "trainingWeeks": 20, "...": "..." }
+      "trainingHours": 420, "trainingWeeks": 20,
+      "goalLabel": "Your level today — employers look for this",   // what it means for THIS intent
+      "primary": true,                                              // the one to act on for this intent
+      "...": "..." }
   ],
   "recommendations": [ /* courses; [] when intent is jobs */ ],
   "jobs": [ /* JobMatch; [] unless intent is jobs */ ],
-  "plan": { /* with a profile: roadmap, steps, `qualifications` (the picks above) and `spoken` (short voice summary) */ }
+  "plan": { /* with a profile: roadmap, steps, `qualifications` (the picks above), `spoken` (short voice
+             summary), `action` (NCS for jobs, Skill India Digital Hub for training/certificate),
+             `actionNote` (what that portal is and why) and, for training/certificate,
+             `secondaryAction` (the official PM-AJAY course list) */ }
 }
 ```
+The same profile yields the same three qualifications for every intent; what
+changes is their meaning and which one is `primary`:
+- `jobs` / `certificate` → today's level is primary.
+- `training` → a beginner trains for today's level; someone already at the
+  working or advanced step trains for the **next** step (listed first, primary),
+  and today's level is offered for RPL certification. Courses follow the same order.
 Notes:
 - **With a `profile` for a focus trade (tailoring, beauty, electrical)** the
   answers alone decide the result: `server/src/services/careerQualifications.ts`

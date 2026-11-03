@@ -93,6 +93,9 @@ export function buildCareerPlan(profile: CareerProfile, intent: CareerIntent, la
   const next = qualifications.find(x => x.fit === 'next');
   const qName = (x: { title: string; titleHi: string; level: number }) => `${hi ? x.titleHi : x.title} (NSQF ${x.level})`;
   const stepWords = isFocusProfession(profile.profession) ? (hi ? ['शुरुआती', 'कामकाजी', 'उन्नत'] : ['starting', 'working', 'advanced'])[decideStep(profile).step] : '';
+  // Someone already working at a level who asks for training is upskilling: train for the next step.
+  const upskill = intent === 'training' && !!next && isFocusProfession(profile.profession) && decideStep(profile).step >= 1;
+  const trainFor = upskill ? next : best;
   const documents = profile.profession === 'teaching'
     ? text('Prepare education certificates, teaching credentials (if held), experience references and a demo lesson.', 'शिक्षा प्रमाणपत्र, शिक्षण योग्यता (यदि है), अनुभव के संदर्भ और डेमो पाठ तैयार करें।')
     : text('Prepare a short work profile, training certificates (if held), references and photos of your work.', 'छोटा कार्य परिचय, प्रशिक्षण प्रमाणपत्र (यदि है), संदर्भ और काम की फ़ोटो तैयार करें।');
@@ -100,7 +103,9 @@ export function buildCareerPlan(profile: CareerProfile, intent: CareerIntent, la
     ? { title: text('Your level today', 'आज आपका स्तर'), detail: text(`${qName(best)}. Jobs at this level are listed first.${next ? ` Jobs marked “reachable with training” need ${qName(next)}.` : ''}`, `${qName(best)}। इस स्तर की नौकरियाँ पहले दिखाई गई हैं।${next ? ` “प्रशिक्षण से संभव” वाली नौकरियों के लिए ${qName(next)} चाहिए।` : ''}`) }
     : intent === 'certificate'
       ? { title: text('Qualification to get certified in', 'किस योग्यता का प्रमाणपत्र लें'), detail: text(`${qName(best)} through Recognition of Prior Learning (RPL): an assessment of the work you already do.${next ? ` Later: ${qName(next)}.` : ''}`, `${qName(best)} — पूर्व कौशल की मान्यता (RPL) से, यानी आप जो काम पहले से करते हैं उसका मूल्यांकन।${next ? ` बाद में: ${qName(next)}।` : ''}`) }
-      : { title: text('Recommended NSQF course', 'सुझाई गई NSQF योग्यता'), detail: text(`${qName(best)}: about ${best.hours} hours (≈ ${best.weeks} weeks at your hours).${next ? ` After that: ${qName(next)}.` : ''}`, `${qName(best)}: लगभग ${best.hours} घंटे (आपके समय के अनुसार ≈ ${best.weeks} हफ़्ते)।${next ? ` उसके बाद: ${qName(next)}।` : ''}`) }) : null;
+      : upskill && next
+        ? { title: text('Train for your next level', 'अगले स्तर का प्रशिक्षण'), detail: text(`${qName(next)}: about ${next.hours} hours (≈ ${next.weeks} weeks at your hours). You already work at ${qName(best)} — you can get that certified through RPL.`, `${qName(next)}: लगभग ${next.hours} घंटे (आपके समय के अनुसार ≈ ${next.weeks} हफ़्ते)। आप पहले से ${qName(best)} स्तर पर काम करते हैं — उसका प्रमाणपत्र RPL से ले सकते हैं।`) }
+        : { title: text('Recommended NSQF course', 'सुझाई गई NSQF योग्यता'), detail: text(`${qName(best)}: about ${best.hours} hours (≈ ${best.weeks} weeks at your hours).${next ? ` After that: ${qName(next)}.` : ''}`, `${qName(best)}: लगभग ${best.hours} घंटे (आपके समय के अनुसार ≈ ${best.weeks} हफ़्ते)।${next ? ` उसके बाद: ${qName(next)}।` : ''}`) }) : null;
   const steps = intent === 'jobs' ? [
     { title: text('1. Prepare your application', '1. आवेदन की तैयारी'), detail: documents },
     { title: text('2. Address requirements', '2. ज़रूरी शर्तें पूरी करें'), detail: gaps.join(' ') || text('Check each vacancy’s experience, qualification and schedule requirements.', 'हर नौकरी की अनुभव, योग्यता और समय की शर्तें जाँचें।') },
@@ -121,15 +126,26 @@ export function buildCareerPlan(profile: CareerProfile, intent: CareerIntent, la
     : intent === 'certificate' ? text('Below are courses and assessment options to certify your skill.', 'नीचे आपके हुनर का प्रमाणपत्र पाने के कोर्स और मूल्यांकन विकल्प हैं।')
       : text('Below are PM-AJAY courses matched to this qualification.', 'नीचे इस योग्यता से मिलते PM-AJAY कोर्स हैं।');
   const spoken = best
-    ? text(`Based on your answers, your work is ${roleTitle}, at the ${stepWords} step. The best NSQF qualification for you is ${best.title}, level ${best.level}. ${next ? `Your next step is ${next.title}. ` : ''}${goal}`,
-      `आपके जवाबों के अनुसार आप ${roleTitle} हैं, ${stepWords} स्तर पर। आपके लिए सबसे सही NSQF योग्यता है ${best.titleHi}, स्तर ${best.level}। ${next ? `आपका अगला कदम है ${next.titleHi}। ` : ''}${goal}`)
+    ? upskill && next
+      ? text(`Based on your answers, your work is ${roleTitle}, at the ${stepWords} step. Your current level is ${best.title}, level ${best.level}. To move up, train for ${next.title}, level ${next.level}. ${goal}`,
+        `आपके जवाबों के अनुसार आप ${roleTitle} हैं, ${stepWords} स्तर पर। आपका मौजूदा स्तर है ${best.titleHi}, स्तर ${best.level}। आगे बढ़ने के लिए ${next.titleHi}, स्तर ${next.level} का प्रशिक्षण लें। ${goal}`)
+      : text(`Based on your answers, your work is ${roleTitle}, at the ${stepWords} step. ${intent === 'jobs' ? 'The NSQF qualification that matches your level' : 'The best NSQF qualification for you'} is ${best.title}, level ${best.level}. ${next ? `Your next step is ${next.title}. ` : ''}${goal}`,
+        `आपके जवाबों के अनुसार आप ${roleTitle} हैं, ${stepWords} स्तर पर। ${intent === 'jobs' ? 'आपके स्तर से मेल खाती NSQF योग्यता' : 'आपके लिए सबसे सही NSQF योग्यता'} है ${best.titleHi}, स्तर ${best.level}। ${next ? `आपका अगला कदम है ${next.titleHi}। ` : ''}${goal}`)
     : [summary, ...steps.map(s => `${s.title}. ${s.detail}`)].join('. ');
+  // Where each goal leads, and why that portal (shown under the button).
+  const portal = intent === 'jobs'
+    ? { label: text('Search jobs on National Career Service (NCS)', 'National Career Service (NCS) पर नौकरी खोजें'), url: 'https://www.ncs.gov.in/',
+      note: text('NCS is the Government of India job portal (Ministry of Labour & Employment). Register there as a job seeker to apply. Saksham job cards above can be applied to directly in this app.', 'NCS भारत सरकार (श्रम एवं रोज़गार मंत्रालय) का नौकरी पोर्टल है। वहाँ नौकरी खोजने वाले के रूप में पंजीकरण करके आवेदन करें। ऊपर के सक्षम जॉब कार्ड पर इसी ऐप से आवेदन कर सकते हैं।') }
+    : { label: intent === 'certificate' ? text('Find an assessment centre on Skill India Digital Hub', 'स्किल इंडिया डिजिटल हब पर मूल्यांकन केंद्र खोजें') : text('Find a training centre on Skill India Digital Hub', 'स्किल इंडिया डिजिटल हब पर प्रशिक्षण केंद्र खोजें'), url: 'https://www.skillindiadigital.gov.in/',
+      note: text('Skill India Digital Hub is the Government of India portal (Ministry of Skill Development) that lists NSQF courses, training centres and RPL assessments, so it is where you enrol. PM-AJAY training is arranged through your state SC development corporation / district office; its approved courses are in the official list.', 'स्किल इंडिया डिजिटल हब भारत सरकार (कौशल विकास मंत्रालय) का पोर्टल है जहाँ NSQF कोर्स, प्रशिक्षण केंद्र और RPL मूल्यांकन मिलते हैं, इसलिए दाखिला वहीं होता है। PM-AJAY प्रशिक्षण आपके राज्य के अनुसूचित जाति विकास निगम / ज़िला कार्यालय से मिलता है; उसके स्वीकृत कोर्स आधिकारिक सूची में हैं।') };
   return { intent, profile, roleTitle, searchTitle, summary, ready, gaps, modules, steps, spoken,
     qualifications: qualifications.map(({ course: _course, ...pick }) => pick),
-    action: intent === 'jobs'
-      ? { label: text('Open National Career Service', 'National Career Service खोलें'), url: 'https://www.ncs.gov.in/' }
-      : { label: text('Find training / assessment centres', 'प्रशिक्षण / मूल्यांकन केंद्र खोजें'), url: 'https://www.skillindiadigital.gov.in/' },
-    searchHint: text(`Search for: ${searchTitle}. Location: ${profile.district}, ${profile.state}.`, `खोजें: ${searchTitle}। स्थान: ${profile.district}, ${profile.state}।`),
+    action: { label: portal.label, url: portal.url },
+    actionNote: portal.note,
+    secondaryAction: intent === 'jobs' ? undefined : { label: text('Official PM-AJAY course list', 'PM-AJAY की आधिकारिक कोर्स सूची'), url: 'https://pmajay.dosje.gov.in/CourseList' },
+    searchHint: intent !== 'jobs' && trainFor
+      ? text(`Search for the course: ${trainFor.title}. Location: ${profile.district}, ${profile.state}.`, `यह कोर्स खोजें: ${trainFor.title}। स्थान: ${profile.district}, ${profile.state}।`)
+      : text(`Search for: ${searchTitle}. Location: ${profile.district}, ${profile.state}.`, `खोजें: ${searchTitle}। स्थान: ${profile.district}, ${profile.state}।`),
   };
 }
 

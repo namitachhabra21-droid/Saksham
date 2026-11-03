@@ -220,7 +220,7 @@ assistantRouter.post("/reprioritise", async (req, res) => {
   // changes whenever an answer does — no transcript needed.
   if (profile && isFocusProfession(profile.profession)) {
     const planLanguage = language ?? (session.language === "hi" ? "hi" : "en");
-    const { picks, mappings } = await profileMappings(profile, planLanguage);
+    const { picks, mappings } = await profileMappings(profile, planLanguage, intent);
     const [recommendations, jobs] = await Promise.all([
       intent === "jobs" ? [] : recommendCoursesForProfile({ profile, picks, intent, state: effectiveState, language: planLanguage }),
       intent === "jobs" ? matchJobsForProfile({ profile, picks, state: effectiveState, district: effectiveDistrict, language: planLanguage }) : [],

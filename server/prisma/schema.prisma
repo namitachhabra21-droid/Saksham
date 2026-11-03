@@ -77,7 +77,7 @@ model User {
   language      Language @default(hi)
   gender        String?
   age           Int?
-  education     String? // below_10th | 10th | 12th | iti_diploma | undergrad | postgrad — self-declared
+  education     String? // below_10th | 10th | 12th | iti_diploma | undergrad_ongoing | undergrad | postgrad — self-declared
   /// which skill experienceYears refers to (a services/skillLexicon.ts token).
   /// Experience is per trade — 20 years of pottery says nothing about food
   /// processing — so this records what was actually asked about, and the app

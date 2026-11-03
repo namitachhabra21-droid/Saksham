@@ -1,4 +1,5 @@
 import type { CareerPlan, CareerProfile } from "./career";
+import { parseEducation, type Education } from './educationParse';
 import Constants from 'expo-constants';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
@@ -107,6 +108,10 @@ export interface NsqfMapping {
   fit?: 'recommended' | 'alternative' | 'next';
   reason?: string;
   titleHi?: string;
+  /** what this qualification means for the chosen goal ("Train for this next"), localized */
+  goalLabel?: string;
+  /** the qualification to act on for this goal */
+  primary?: boolean;
   trainingHours?: number;
   trainingWeeks?: number;
 }
@@ -512,14 +517,7 @@ function localProfileAnswer(field: ProfileField, answer: string): string | numbe
     if (/\b(other|another|different|bahar|dusri|doosri|kahin aur|shehar|city)\b|बाहर|दूसरी|कहीं और|शहर/u.test(text)) return 'other';
     return null;
   }
-  if (/\b(postgrad|post graduate|post graduation|masters?|m\.?a|m\.?com|m\.?sc|pg)\b|स्नातकोत्तर|मास्टर/u.test(text)) return 'postgrad';
-  if (/\b(undergrad|graduate|graduation|degree|bachelor|b\.?a|b\.?com|b\.?sc|ba|bcom|bsc)\b|स्नातक|ग्रेजुएट|बीए|बी कॉम|बीएससी/u.test(text)) return 'undergrad';
-  if (/\b(iti|diploma|polytechnic)\b|आईटीआई|डिप्लोमा/u.test(text)) return 'iti_diploma';
-  if (/\b(12th|xii|twelfth|intermediate|senior secondary|barahvi|baarahvi|barvi)\b|बारहवीं|१२वीं|12वीं|12 वीं/u.test(text)) return '12th';
-  if (/\b(10th|xth|tenth|matric|secondary|dasvi|dasveen|daswin)\b|दसवीं|१०वीं|10वीं|10 वीं/u.test(text)) return '10th';
-  if (/\b(1st|2nd|3rd|4th|5th|6th|7th|8th|9th|primary|middle|below tenth|below 10th|ninth|eighth|seventh|sixth|fifth)\b|पहली|दूसरी|तीसरी|चौथी|पांचवीं|छठी|सातवीं|आठवीं|नौवीं/u.test(text)) return 'below_10th';
-  if (/\b(no school|not studied|illiterate|literate|none|nahi padha|nahi padhi)\b|नहीं पढ़ा|नहीं पढ़ी|अनपढ़/u.test(text)) return 'below_10th';
-  return null;
+  return parseEducation(answer);
 }
 
 const MONTH_UNIT_PATTERN =
@@ -878,7 +876,7 @@ export async function setRecommendationStatus(id: string, status: string): Promi
 }
 
 export type Gender = 'male' | 'female' | 'other';
-export type Education = 'below_10th' | '10th' | '12th' | 'iti_diploma' | 'undergrad' | 'postgrad';
+export type { Education } from './educationParse';
 
 export interface AuthUser {
   id: string;

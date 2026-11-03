@@ -162,6 +162,8 @@ export default function ResultsScreen() {
           {intent === 'jobs' && <Button label={language === 'hi' ? 'सक्षम में नौकरियाँ देखें' : 'View matching jobs in Saksham'} icon="briefcase-outline" onPress={() => scrollRef.current?.scrollTo({ y: jobsOffset, animated: true })} />}
           {intent === 'jobs' && <Txt variant="caption" tone="dim">{language === 'hi' ? 'नीचे सक्षम के जॉब कार्ड हैं। NCS एक वैकल्पिक बाहरी वेबसाइट है; उसे खोलने से आवेदन जमा नहीं होता।' : 'Saksham job cards appear below. NCS is an optional external website; opening it does not submit an application.'}</Txt>}
           <Button label={intent === 'jobs' ? (language === 'hi' ? 'वैकल्पिक: NCS पर खोजें (बाहरी)' : 'Optional: search NCS (external)') : result.plan.action.label} variant={intent === 'jobs' ? 'secondary' : 'primary'} icon="open-outline" onPress={() => Linking.openURL(result.plan!.action.url).catch(() => Alert.alert(t.tryAgain))} />
+          {!!result.plan.actionNote && <Txt variant="caption" tone="dim">{result.plan.actionNote}</Txt>}
+          {!!result.plan.secondaryAction && <Button label={result.plan.secondaryAction.label} variant="secondary" size="md" icon="list-outline" onPress={() => Linking.openURL(result.plan!.secondaryAction!.url).catch(() => Alert.alert(t.tryAgain))} />}
           <Button variant="secondary" size="md" label={language === 'hi' ? 'अपने उत्तर या लक्ष्य बदलें' : 'Change your answers or goal'} onPress={() => { stopSpeaking(); router.push('/survey'); }} />
         </Card>}
 
@@ -332,15 +334,17 @@ function NsqfCard({
   hindi?: boolean;
 }) {
   const { c, radius } = useTheme();
-  const fit = m.fit ? FIT_LABEL[m.fit][hindi ? 'hi' : 'en'] : null;
+  const fit = m.goalLabel ?? (m.fit ? FIT_LABEL[m.fit][hindi ? 'hi' : 'en'] : null);
+  // the one to act on for this goal (for upskilling that is the next step)
+  const primary = m.fit ? m.primary ?? m.fit === 'recommended' : best;
   return (
-    <Card index={index} tint={m.fit ? (m.fit === 'recommended' ? 'primary' : undefined) : best ? 'primary' : undefined} style={{ gap: 10 }}>
+    <Card index={index} tint={primary ? 'primary' : undefined} style={{ gap: 10 }}>
       <View style={styles.sectionHead}>
         <Txt variant="overline" tone="faint" style={{ flex: 1 }}>
           {fit ?? label}
         </Txt>
-        {(m.fit ? m.fit === 'recommended' : best) && <Chip label={hindi ? 'सबसे सही' : 'Best match'} tone="primary" icon="star" />}
-        {m.fit === 'next' && <Chip label={hindi ? 'अगला कदम' : 'Next step'} tone="accent" icon="trending-up" />}
+        {primary && <Chip label={hindi ? 'आपके लक्ष्य के लिए' : 'For your goal'} tone="primary" icon="star" />}
+        {m.fit === 'next' && !primary && <Chip label={hindi ? 'अगला कदम' : 'Next step'} tone="accent" icon="trending-up" />}
       </View>
       <View style={styles.nsqfRow}>
         <View style={{ flex: 1, gap: 8 }}>

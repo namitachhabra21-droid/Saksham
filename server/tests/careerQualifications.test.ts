@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { careerCatalog, careerProfileSchema, buildCareerPlan, surveyCatalog, type CareerProfile } from '../src/services/career.js';
 import { FOCUS_PROFESSIONS, LADDERS, decideStep, pickQualifications } from '../src/services/careerQualifications.js';
+import { isUpskilling } from '../src/services/careerMatch.js';
 
 const nsqf: { qpCode: string; title: string; nsqfLevel: number; notionalHours: number | null }[] =
   JSON.parse(readFileSync(new URL('../prisma/data/nsqf-qualifications.json', import.meta.url), 'utf8'));
@@ -66,6 +67,26 @@ test('hours per day change the training-weeks estimate', () => {
   const part = pickQualifications(profile('beauty', 'hair', 'mid', { availability: 'part' }), 'en', careerCatalog)[0];
   const full = pickQualifications(profile('beauty', 'hair', 'mid', { availability: 'full' }), 'en', careerCatalog)[0];
   assert.ok(part.weeks > full.weeks);
+});
+
+test('training upskills a working person to the next step; jobs and certificates use today\'s level', () => {
+  const working = profile('tailoring', 'alterations', 'mid');
+  const picks = pickQualifications(working, 'en', careerCatalog);
+  assert.equal(isUpskilling(working, 'training', picks), true);
+  assert.equal(isUpskilling(working, 'jobs', picks), false);
+  assert.equal(isUpskilling(profile('tailoring', 'alterations', 'low'), 'training', pickQualifications(profile('tailoring', 'alterations', 'low'), 'en', careerCatalog)), false);
+  const training = buildCareerPlan(working, 'training', 'en');
+  const jobs = buildCareerPlan(working, 'jobs', 'en');
+  const certificate = buildCareerPlan(working, 'certificate', 'en');
+  assert.match(training.steps[0].title, /Train for your next level/);
+  assert.match(training.steps[0].detail, /Sampling Tailor/);
+  assert.match(training.searchHint, /Sampling Tailor/);
+  assert.match(jobs.steps[0].detail, /^Self Employed Tailor/);
+  assert.match(certificate.steps[0].detail, /^Self Employed Tailor/);
+  assert.match(jobs.action.url, /ncs\.gov\.in/);
+  assert.match(training.action.url, /skillindiadigital\.gov\.in/);
+  assert.ok(training.actionNote && training.secondaryAction?.url.includes('pmajay'));
+  assert.equal(jobs.secondaryAction, undefined);
 });
 
 test('the plan names the recommended qualification and has a Hindi spoken summary', () => {

@@ -176,6 +176,7 @@ export interface Strings {
   eduIti: string;
   eduUndergrad: string;
   eduPostgrad: string;
+  eduUndergradOngoing: string;
   onboardDoneTitle: string;
   onboardDoneBody: string;
   onboardContinue: string;
@@ -361,6 +362,7 @@ const hi: Strings = {
   eduIti: 'आईटीआई / डिप्लोमा',
   eduUndergrad: 'स्नातक (UG)',
   eduPostgrad: 'स्नातकोत्तर (PG)',
+  eduUndergradOngoing: 'कॉलेज में पढ़ रहे हैं (स्नातक जारी)',
   onboardDoneTitle: 'सब तैयार है!',
   onboardDoneBody: 'अब हम आपके लिए सही प्रशिक्षण सुझा सकते हैं।',
   onboardContinue: 'आगे बढ़ें',
@@ -543,8 +545,9 @@ const en: Strings = {
   edu10th: '10th pass',
   edu12th: '12th pass',
   eduIti: 'ITI / Diploma',
-  eduUndergrad: 'Undergraduate',
+  eduUndergrad: 'Graduate (UG degree)',
   eduPostgrad: 'Postgraduate',
+  eduUndergradOngoing: 'In college (graduation ongoing)',
   onboardDoneTitle: "You're all set!",
   onboardDoneBody: 'Now we can suggest the right training for you.',
   onboardContinue: 'Continue',
@@ -730,6 +733,7 @@ const bn: Strings = {
   eduIti: 'আইটিআই / ডিপ্লোমা',
   eduUndergrad: 'স্নাতক (UG)',
   eduPostgrad: 'স্নাতকোত্তর (PG)',
+  eduUndergradOngoing: 'কলেজে পড়ছেন (স্নাতক চলছে)',
   onboardDoneTitle: 'সব প্রস্তুত!',
   onboardDoneBody: 'এখন আমরা আপনার জন্য সঠিক প্রশিক্ষণ সুপারিশ করতে পারি।',
   onboardContinue: 'এগিয়ে যান',
@@ -915,6 +919,7 @@ const ta: Strings = {
   eduIti: 'ஐடிஐ / டிப்ளமா',
   eduUndergrad: 'இளங்கலை (UG)',
   eduPostgrad: 'முதுகலை (PG)',
+  eduUndergradOngoing: 'கல்லூரியில் படிக்கிறார் (பட்டப்படிப்பு நடைபெறுகிறது)',
   onboardDoneTitle: 'எல்லாம் தயார்!',
   onboardDoneBody: 'இப்போது நாங்கள் உங்களுக்கு சரியான பயிற்சியை பரிந்துரைக்க முடியும்.',
   onboardContinue: 'தொடரவும்',
@@ -1100,6 +1105,7 @@ const te: Strings = {
   eduIti: 'ఐటీఐ / డిప్లొమా',
   eduUndergrad: 'అండర్ గ్రాడ్యుయేట్ (UG)',
   eduPostgrad: 'పోస్ట్ గ్రాడ్యుయేట్ (PG)',
+  eduUndergradOngoing: 'కాలేజీలో చదువుతున్నారు (డిగ్రీ కొనసాగుతోంది)',
   onboardDoneTitle: 'అంతా సిద్ధం!',
   onboardDoneBody: 'ఇప్పుడు మేము మీ కోసం సరైన శిక్షణను సూచించగలం.',
   onboardContinue: 'కొనసాగించండి',
@@ -1285,6 +1291,7 @@ const mr: Strings = {
   eduIti: 'आयटीआय / डिप्लोमा',
   eduUndergrad: 'पदवीधर (UG)',
   eduPostgrad: 'पदव्युत्तर (PG)',
+  eduUndergradOngoing: 'महाविद्यालयात शिकत आहे (पदवी सुरू)',
   onboardDoneTitle: 'सर्व तयार आहे!',
   onboardDoneBody: 'आता आम्ही तुमच्यासाठी योग्य प्रशिक्षण सुचवू शकतो.',
   onboardContinue: 'पुढे जा',
@@ -1470,6 +1477,7 @@ const kn: Strings = {
   eduIti: 'ಐಟಿಐ / ಡಿಪ್ಲೊಮಾ',
   eduUndergrad: 'ಪದವಿ (UG)',
   eduPostgrad: 'ಸ್ನಾತಕೋತ್ತರ (PG)',
+  eduUndergradOngoing: 'ಕಾಲೇಜಿನಲ್ಲಿ ಓದುತ್ತಿದ್ದಾರೆ (ಪದವಿ ನಡೆಯುತ್ತಿದೆ)',
   onboardDoneTitle: 'ಎಲ್ಲವೂ ಸಿದ್ಧವಾಗಿದೆ!',
   onboardDoneBody: 'ಈಗ ನಾವು ನಿಮಗಾಗಿ ಸೂಕ್ತವಾದ ತರಬೇತಿಯನ್ನು ಸೂಚಿಸಬಹುದು.',
   onboardContinue: 'ಮುಂದುವರಿಸಿ',
@@ -1655,6 +1663,7 @@ const gu: Strings = {
   eduIti: 'આઈટીઆઈ / ડિપ્લોમા',
   eduUndergrad: 'સ્નાતક (UG)',
   eduPostgrad: 'અનુસ્નાતક (PG)',
+  eduUndergradOngoing: 'કૉલેજમાં અભ્યાસ ચાલુ (સ્નાતક ચાલુ)',
   onboardDoneTitle: 'બધું તૈયાર છે!',
   onboardDoneBody: 'હવે અમે તમારા માટે યોગ્ય તાલીમ સૂચવી શકીએ છીએ.',
   onboardContinue: 'આગળ વધો',
@@ -1840,6 +1849,7 @@ const pa: Strings = {
   eduIti: 'ਆਈਟੀਆਈ / ਡਿਪਲੋਮਾ',
   eduUndergrad: 'ਗ੍ਰੈਜੂਏਟ (UG)',
   eduPostgrad: 'ਪੋਸਟ ਗ੍ਰੈਜੂਏਟ (PG)',
+  eduUndergradOngoing: 'ਕਾਲਜ ਵਿੱਚ ਪੜ੍ਹ ਰਹੇ ਹਨ (ਗ੍ਰੈਜੂਏਸ਼ਨ ਜਾਰੀ)',
   onboardDoneTitle: 'ਸਭ ਕੁਝ ਤਿਆਰ ਹੈ!',
   onboardDoneBody: 'ਹੁਣ ਅਸੀਂ ਤੁਹਾਡੇ ਲਈ ਸਹੀ ਸਿਖਲਾਈ ਦੀ ਸਿਫ਼ਾਰਸ਼ ਕਰ ਸਕਦੇ ਹਾਂ।',
   onboardContinue: 'ਜਾਰੀ ਰੱਖੋ',
@@ -2025,6 +2035,7 @@ const or: Strings = {
   eduIti: 'ଆଇଟିଆଇ / ଡିପ୍ଲୋମା',
   eduUndergrad: 'ସ୍ନାତକ (UG)',
   eduPostgrad: 'ସ୍ନାତକୋତ୍ତର (PG)',
+  eduUndergradOngoing: 'କଲେଜରେ ପଢୁଛନ୍ତି (ସ୍ନାତକ ଚାଲିଛି)',
   onboardDoneTitle: 'ସବୁ ପ୍ରସ୍ତୁତ!',
   onboardDoneBody: 'ବର୍ତ୍ତମାନ ଆମେ ଆପଣଙ୍କ ପାଇଁ ସଠିକ୍ ତାଲିମ ପରାମର୍ଶ ଦେଇପାରିବୁ।',
   onboardContinue: 'ଆଗକୁ ବଢ଼ନ୍ତୁ',

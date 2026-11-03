@@ -57,6 +57,7 @@ export default function VoiceProfileStep() {
     '10th': t.edu10th,
     '12th': t.edu12th,
     iti_diploma: t.eduIti,
+    undergrad_ongoing: t.eduUndergradOngoing,
     undergrad: t.eduUndergrad,
     postgrad: t.eduPostgrad,
   };

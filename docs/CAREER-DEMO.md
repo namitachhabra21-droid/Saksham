@@ -37,6 +37,22 @@ points = experience (0–3) + the two trade answers (0–2 each). 0–2 → *sta
 4. **Change your answers or goal** → answer as a **beginner** (just starting, no machine, basic) → **I want training**. Now: *Tailor (Darzi) (NSQF 3)* best fit, next step *Darzi – Advanced*, and PM-AJAY courses that train for them, with weeks at the chosen hours per day.
 5. Try **work from home**: home-based order jobs move to the top. Try an **electrician with no safety training** but 3+ years and ITI: held at *Helper Electrician* with the safety reason.
 
+### Jobs vs training vs certificate
+
+The same answers give the same three NSQF qualifications; the goal changes which one to act on:
+
+| Goal | Primary qualification (★ “For your goal”) | Where it leads |
+|---|---|---|
+| Find work | your level today (“employers look for this”); next step = “reachable with training” | Saksham job cards → **Apply** saves an application in Saksham that staff see in the admin; optional external search on **National Career Service** (ncs.gov.in, Ministry of Labour — the Government job portal) |
+| I want training | beginner: today's level (“train for this first”); 1–3 yrs / expert: the **next** level (“your upskilling goal”), with today's level offered for RPL certification | PM-AJAY courses that train for it; **Skill India Digital Hub** (skillindiadigital.gov.in, Ministry of Skill Development — where NSQF courses, centres and enrolment are) + the official PM-AJAY course list |
+| Certificate | today's level via RPL (assessment of what you already do) | Skill India Digital Hub assessment centres |
+
+PM-AJAY training itself is arranged through the state SC development corporation / district office; the app says this under the button. Neither portal accepts a search link, so the plan shows exactly what to search for (“Search for the course: Sampling Tailor. Location: …”).
+
+### Education (onboarding)
+
+The education question understands English, Hinglish and Hindi, digits or words: “8th”, “dasvi pass”, “12वीं”, “inter”, “ITI”, “college second year” / “BA 2nd year” / “ग्रेजुएशन कर रही हूँ” (→ *In college*), “graduated”, “B.Com”, “M.A.”, “postgraduate”, “अनपढ़”. See `server/src/services/educationParse.ts` and `server/tests/education.test.ts` (130+ answers).
+
 | Same trade, different answers | NSQF qualification shown |
 |---|---|
 | Tailoring · alterations · beginner | Tailor (Darzi), L3 → next: Self Employed Tailor |

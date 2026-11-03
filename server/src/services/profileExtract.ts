@@ -1,12 +1,14 @@
 import { env, hasGroq } from "../lib/env.js";
 import { GROQ_CHAT_URL, GROQ_CHAT_MODEL, GROQ_MAX_TOKENS, groqHeaders } from "../lib/groq.js";
+import { EDUCATION_LEVELS, parseEducation } from "./educationParse.js";
 
 
 export type ProfileField = "name" | "gender" | "age" | "education" | "experienceYears" | "workPreference";
 
 const ENUM_OPTIONS: Record<"gender" | "education" | "workPreference", string[]> = {
   gender: ["male", "female", "other"],
-  education: ["below_10th", "10th", "12th", "iti_diploma", "undergrad", "postgrad"],
+  // undergrad_ongoing = still in college (e.g. "BA 2nd year"); undergrad = graduated
+  education: [...EDUCATION_LEVELS],
   // where they want to work: at/near where they live, or somewhere else
   workPreference: ["home", "other"],
 };
@@ -156,15 +158,7 @@ function fallbackGender(answer: string): string | null {
 }
 
 function fallbackEducation(answer: string): string | null {
-  const text = normalizeAnswer(answer);
-  if (/\b(postgrad|post graduate|post graduation|masters?|m\.?a|m\.?com|m\.?sc|pg)\b|स्नातकोत्तर|मास्टर/u.test(text)) return "postgrad";
-  if (/\b(undergrad|graduate|graduation|degree|bachelor|b\.?a|b\.?com|b\.?sc|ba|bcom|bsc)\b|स्नातक|ग्रेजुएट|बीए|बी कॉम|बीएससी/u.test(text)) return "undergrad";
-  if (/\b(iti|diploma|polytechnic)\b|आईटीआई|डिप्लोमा/u.test(text)) return "iti_diploma";
-  if (/\b(12th|xii|twelfth|intermediate|senior secondary|barahvi|baarahvi|barvi)\b|बारहवीं|१२वीं|12वीं|12 वीं/u.test(text)) return "12th";
-  if (/\b(10th|xth|tenth|matric|secondary|dasvi|dasveen|daswin)\b|दसवीं|१०वीं|10वीं|10 वीं/u.test(text)) return "10th";
-  if (/\b(1st|2nd|3rd|4th|5th|6th|7th|8th|9th|primary|middle|below tenth|below 10th|ninth|eighth|seventh|sixth|fifth)\b|पहली|दूसरी|तीसरी|चौथी|पांचवीं|छठी|सातवीं|आठवीं|नौवीं/u.test(text)) return "below_10th";
-  if (/\b(no school|not studied|illiterate|literate|none|nahi padha|nahi padhi)\b|नहीं पढ़ा|नहीं पढ़ी|अनपढ़/u.test(text)) return "below_10th";
-  return null;
+  return parseEducation(answer);
 }
 
 /** Years of experience. "no experience"/"naya" is a real answer meaning 0,
@@ -242,7 +236,7 @@ export async function extractProfileAnswer(
       ? "Extract the person's age as a single integer between 10 and 100. The number may be spoken as a word in any language (e.g. Hindi \"paccis\" = 25, \"tees\" = 30, \"chalis\" = 40, \"pachaas\" = 50) rather than digits — convert it carefully and precisely, do not guess a rounder nearby number. Reply with ONLY the final integer, nothing else. If no clear age is stated, reply exactly: unclear"
       : field === "name"
         ? "Extract just the person's own name from their answer, dropping filler words like \"my name is\" / \"mera naam ... hai\". Reply with ONLY their name, properly capitalized, transliterated to plain Latin letters if it was spoken in another script or language. If no name is clearly stated, reply exactly: unclear"
-        : `Classify the answer into exactly one of these options: ${ENUM_OPTIONS[field].join(", ")}. Reply with ONLY one of those exact words, nothing else. If it doesn't clearly fit any option, reply exactly: unclear`;
+        : `Classify the answer into exactly one of these options: ${ENUM_OPTIONS[field].join(", ")}. ${field === "education" ? "Use the highest level COMPLETED: below_10th (never studied or class 1-9), 10th, 12th (also intermediate / plus two), iti_diploma, undergrad_ongoing (in college now, e.g. \"BA 2nd year\"), undergrad (graduated), postgrad (completed a master's or PhD; someone still doing a master's is undergrad). " : ""}Reply with ONLY one of those exact words, nothing else. If it doesn't clearly fit any option, reply exactly: unclear`;
 
   let res: Response;
   try {
